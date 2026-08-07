@@ -108,3 +108,28 @@ export async function addStudent(classId: string, formData: FormData) {
 
   revalidatePath(`/classes/${classId}`);
 }
+
+export interface DeleteClassResult {
+  success: boolean;
+  error?: string;
+}
+
+/** Deletes a class and its students, but only if no contract has ever been issued for it. */
+export async function deleteClass(classId: string): Promise<DeleteClassResult> {
+  const supabase = await createClient();
+
+  const { count } = await supabase
+    .from("contracts")
+    .select("id", { count: "exact", head: true })
+    .eq("class_id", classId);
+
+  if (count && count > 0) {
+    return { success: false, error: "This class has issued contracts and cannot be deleted." };
+  }
+
+  const { error } = await supabase.from("classes").delete().eq("id", classId);
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/classes");
+  return { success: true };
+}

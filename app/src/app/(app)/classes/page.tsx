@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { DeleteClassButton } from "./DeleteClassButton";
 
 export default async function ClassesPage() {
   const supabase = await createClient();
@@ -32,6 +33,7 @@ export default async function ClassesPage() {
               <th className="px-4 py-2">Schedule</th>
               <th className="px-4 py-2">Students</th>
               <th className="px-4 py-2">Status</th>
+              <th className="px-4 py-2"></th>
             </tr>
           </thead>
           <tbody>
@@ -54,11 +56,14 @@ export default async function ClassesPage() {
                     {c.locked ? "Locked (contracts issued)" : "Open"}
                   </span>
                 </td>
+                <td className="px-4 py-2 text-right">
+                  {!c.locked && <DeleteClassButton classId={c.id} classCode={c.code} />}
+                </td>
               </tr>
             ))}
             {classes?.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
                   No classes yet. Create one to get started.
                 </td>
               </tr>
