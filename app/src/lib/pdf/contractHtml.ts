@@ -1,0 +1,326 @@
+import {
+  computeContract,
+  formatCurrency,
+  formatDateOfBirth,
+  formatGraduationDate,
+  formatPaymentDate,
+  type SemesterAidInput,
+} from "@/lib/calc";
+
+export interface ContractHtmlInput {
+  student: {
+    firstName: string;
+    lastName: string;
+    ssn: string | null;
+    dateOfBirth: string | null;
+    phone: string | null;
+    mobile: string | null;
+    address: string | null;
+    contractDate: string | null;
+  };
+  program: {
+    name: string;
+    credentialName: string;
+    degreeType: "associate" | "diploma";
+  };
+  klass: {
+    schedule: "Day" | "Evening";
+    methodOfDelivery: "Residential" | "Blended Hybrid" | "Full Distance";
+    tuitionPerCredit: number;
+    creditsTotal: number;
+    weeksTotal: number;
+    monthsTotal: number;
+    minGradePct: number;
+    testingFee: number;
+    applicationFeePerSem: number;
+    registrationFeePerSem: number;
+    skillsLabFee: number;
+    materialsSuppliesFee: number;
+    booksSuppliesFee: number;
+    blsFee: number;
+    otherCostsFee: number;
+    theoryLabHoursA: number | null;
+    clinicalHoursA: number | null;
+    theoryLabHoursB: number | null;
+    clinicalHoursB: number | null;
+  };
+  semesters: SemesterAidInput[];
+  semesterDates: { n: number; startDate: string; endDate: string }[];
+  signerName: string;
+  contractNumber: string;
+}
+
+function esc(v: string | number | null | undefined): string {
+  if (v === null || v === undefined) return "";
+  return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function checkbox(checked: boolean): string {
+  return checked ? "( X )" : "(   )";
+}
+
+export function renderContractHtml(input: ContractHtmlInput): string {
+  const { student, program, klass, semesters, semesterDates, signerName, contractNumber } = input;
+  const totals = computeContract(semesters, klass.tuitionPerCredit);
+  const fullName = [student.firstName, student.lastName].filter(Boolean).join(" ");
+
+  // Total Program Cost = coste_total = matricula + fees_totales (ESPECIFICACION.md
+  // section 4). The individual fee line items above (testing, application,
+  // registration, skills lab, materials, books, BLS, other) are printed for
+  // disclosure only — they are already folded into the per-semester "Fees"
+  // figure Financial Aid enters, so they must NOT be added again here.
+  const totalProgramCost = totals.costeTotal;
+
+  const lastSemesterWithCredits = semesters
+    .slice()
+    .reverse()
+    .find((s) => s.credits > 0);
+  const graduationSemesterDates = lastSemesterWithCredits
+    ? semesterDates.find((d) => d.n === lastSemesterWithCredits.n)
+    : semesterDates[semesterDates.length - 1];
+  const anticipatedGraduationDate = graduationSemesterDates
+    ? formatGraduationDate(graduationSemesterDates.endDate)
+    : "";
+  const startDate = semesterDates[0] ? formatPaymentDate(semesterDates[0].startDate) : "";
+
+  const semesterRows = totals.semesters
+    .map((s, i) => {
+      const dueDate = semesterDates[i] ? formatPaymentDate(semesterDates[i].startDate) : "";
+      return { ordinal: ORDINALS[i], s, dueDate };
+    })
+    .filter((r) => r.s);
+
+  return `
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  @page { size: letter; margin: 0.4in; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; color: #111; margin: 0; }
+  .page { page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { border: 1px solid #333; padding: 4px 6px; vertical-align: top; }
+  .no-border td, .no-border th { border: none; }
+  h1 { font-size: 13pt; margin: 0 0 4px; }
+  h2 { font-size: 10pt; background: #ddd; padding: 3px 6px; margin: 10px 0 0; }
+  .header { display: flex; border: 1px solid #333; }
+  .header .logo { width: 30%; background: #999; padding: 8px; color: #fff; }
+  .header .titlebox { width: 70%; text-align: center; padding: 10px; }
+  .small { font-size: 8pt; color: #444; }
+  .center { text-align: center; }
+  .right { text-align: right; }
+  .bold { font-weight: bold; }
+  .section-title { background: #ccc; text-align: center; font-weight: bold; padding: 3px; }
+  .footer-note { text-align: center; font-size: 8pt; margin-top: 8px; }
+  ul { margin: 4px 0; padding-left: 18px; }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1: Information -->
+<div class="page">
+  <div class="header">
+    <div class="logo"><strong>SABER College</strong></div>
+    <div class="titlebox">
+      <div>3990 W. FLAGLER STREET</div>
+      <div>Miami, Florida 33134</div>
+      <div>Telephone (305) 443-9170</div>
+      <h1>Student Enrollment Agreement</h1>
+    </div>
+  </div>
+  <div class="section-title">Information</div>
+  <table>
+    <tr><td colspan="2">This Agreement is by and between SABER College, 3990 W. Flagler Street, Miami, Florida 33134, (The &ldquo;College&rdquo;) and (the &ldquo;Student&rdquo;) listed below:</td></tr>
+    <tr><td class="bold">STUDENT NAME: ${esc(fullName)}</td><td class="bold">SS #: ${esc(student.ssn)}</td></tr>
+    <tr>
+      <td>Date of Birth: ${esc(student.dateOfBirth ? formatDateOfBirth(student.dateOfBirth) : "")}</td>
+      <td>Telephone: ${esc(student.phone)} &nbsp;&nbsp; Cell phone: ${esc(student.mobile)}</td>
+    </tr>
+    <tr><td colspan="2">Current Address: ${esc(student.address)}</td></tr>
+    <tr>
+      <td>Program Title: ${esc(program.name)}<br/>Credential Awarded upon completion:<br/>${esc(program.credentialName)}</td>
+      <td>Total Semester Credit Hours: ${klass.creditsTotal}<br/>Total Weeks: ${klass.weeksTotal}</td>
+    </tr>
+    <tr>
+      <td>Class Schedule: ${checkbox(klass.schedule === "Evening")} Evening Classes &nbsp; ${checkbox(klass.schedule === "Day")} Day Classes</td>
+      <td class="bold">Method of Delivery: ${esc(klass.methodOfDelivery === "Full Distance" ? "Full Distance (Online)" : klass.methodOfDelivery)}<br/>INITIALS _________</td>
+    </tr>
+    <tr><td colspan="2" class="center">Conditions as they appear in all pages are part of this document.</td></tr>
+  </table>
+  <div class="footer-note">Contract # ${esc(contractNumber)}</div>
+</div>
+
+<!-- PAGE 2: Cancellation and Refund Policy -->
+<div class="page">
+  <div class="section-title">Cancellation and Refund Policy</div>
+  <table class="no-border">
+    <tr><td>This Enrollment Agreement, in addition to the Institutional Catalog, constitutes a binding agreement between the student and the college upon acceptance. (Initial) __________.</td></tr>
+    <tr><td><strong>Refund / Cancellation Policy</strong></td></tr>
+    <tr><td>Our outlined refund policy is designed according to Fair Consumer Practices. Should student be terminated or cancelled for any reason, all refunds will be made according to following refund schedule.
+    <ul>
+      <li>Cancellation must be made in person or Certified mail.</li>
+      <li>If tuition and fees are collected in advance of the start date of classes and the student does not begin classes or withdraws on the first day of classes, no more than $150 application and registration fees may be retained by the institution.
+        <div class="small">The refund policy shall provide for cancellation of any obligation, other than a book and supply assessment for supplies, materials and kits which are not returnable because of use, within 3 working days from the student's signing an enrollment agreement or contract.</div>
+      </li>
+      <li>The refund policy for students attending SABER College, who incur a financial obligation shall be as follows: Students are charged by the semester based on the number of credits per course, the refund policy shall provide a formula for proration of refunds based upon the length of time the student remains enrolled, up to a minimum of 20%.
+        <div class="small">
+          For example:<br/>
+          (A) Cancellation after attendance has begun, through 20% completion of the semester, will result in a Pro Rata refund computed on the number of hours completed to the total semester hours.<br/>
+          (B) Cancellation after completing more than 20% of the semester will result in no refund.
+        </div>
+      </li>
+      <li>Termination Date: The termination date for refund computation purposes is the last date of actual attendance by the student unless earlier written notice is received.</li>
+    </ul>
+    </td></tr>
+    <tr><td><strong>Disclosures as per Rule 6E-1.0032(6)(i),FAC</strong>
+      <ul>
+        <li>Refund shall be made within 30 days of the date that the institution determines that the student has withdrawn.</li>
+        <li>Nonrefundable fees shall not exceed $150.00</li>
+        <li>SABER COLLEGE Statement: Only Students who were denied entry into the school will be kept for one year. If a student is enrolled in the school and then later dismissed, those records will be maintained indefinitely.</li>
+      </ul>
+    </td></tr>
+    <tr><td>All prices for program are as printed herein. There are no carrying charges, interest charges, or service charges connected or charged with any of these programs. Contracts are not sold to a third party at any time. Cost of credit is included in the price cost for the goods and services.</td></tr>
+    <tr><td>Program Cost: (See attached for semester Detail) Student will not need to submit more than one application or registration. Charges will be made automatically per semester.</td></tr>
+    <tr><td>Non-Refundable Registration Fee per Semester: ${formatCurrency(klass.registrationFeePerSem)} per semester.</td></tr>
+  </table>
+  <div class="footer-note">Conditions as they appear in all pages are part of this document.</div>
+</div>
+
+<!-- PAGE 3: Costs and TILA -->
+<div class="page">
+  <table class="no-border">
+    <tr><td class="right">INITIALS: ________________</td></tr>
+  </table>
+  <table>
+    <tr>
+      <td>Non-Refundable Testing Fee: ${formatCurrency(klass.testingFee)}</td>
+      <td>Non-Refundable Application Fee: ${formatCurrency(klass.applicationFeePerSem)} per semester</td>
+    </tr>
+    <tr>
+      <td>Tuition: ${formatCurrency(totals.matricula)}</td>
+      <td>Non-Refundable Registration Fee: ${formatCurrency(klass.registrationFeePerSem)}</td>
+    </tr>
+    <tr>
+      <td>Skills Lab Fees: ${formatCurrency(klass.skillsLabFee)}</td>
+      <td>Materials and Supplies: ${formatCurrency(klass.materialsSuppliesFee)}</td>
+    </tr>
+    <tr>
+      <td colspan="2">Books &amp; Supplies (${program.degreeType === "associate" ? "A.S. Program" : "Diploma Program"}): ${formatCurrency(klass.booksSuppliesFee)}</td>
+    </tr>
+    <tr>
+      <td colspan="2">BLS Training &amp; Certificate: ${formatCurrency(klass.blsFee)}</td>
+    </tr>
+    <tr><td colspan="2">Other Costs: ${formatCurrency(klass.otherCostsFee)}</td></tr>
+    <tr><td colspan="2" class="bold">Total Program Cost: ${formatCurrency(totalProgramCost)}</td></tr>
+  </table>
+
+  <div class="section-title">METHODS OF PAYMENT</div>
+  <table class="no-border">
+    <tr><td>( X ) Full Payment at time of signing enrollment agreement</td></tr>
+    <tr><td>(   ) Registration and Application fee at the time of signing enrollment agreement with balance paid prior to program start date.</td></tr>
+    <tr><td>(   ) Registration and Application fee at the time of signing enrollment agreement with balance paid prior to graduation.</td></tr>
+  </table>
+  <p class="small">NOTE: When school offers a payment plan with four or more payments, the federal boxes will be included in the contract. Enter N/A or LINE THROUGH, if not applicable.</p>
+
+  <table>
+    <tr>
+      <th>Annual Percentage Rate</th>
+      <th>Finance Charge</th>
+      <th>Amount Financed<br/><span class="small">The dollar amount of the credit provided to you or on your behalf</span></th>
+      <th>Total Payment<br/><span class="small">The amount you will have paid after you have made all payments as scheduled</span></th>
+      <th>Total Sales Price<br/><span class="small">The total cost of your purchase on credit including your down payment</span></th>
+    </tr>
+    <tr>
+      <td rowspan="6" class="center">0%</td>
+      <td rowspan="6" class="center">$0</td>
+      <td>
+        ${semesterRows.map((r) => `${r.ordinal} ${formatCurrency(r.s.financiado)}`).join("<br/>")}
+      </td>
+      <td>
+        ${semesterRows.map((r) => `${r.ordinal} ${formatCurrency(r.s.totalPago)}`).join("<br/>")}
+      </td>
+      <td>
+        ${semesterRows.map((r) => `${r.ordinal} ${formatCurrency(r.s.precioVenta)}`).join("<br/>")}
+      </td>
+    </tr>
+  </table>
+
+  <p class="bold">Your Payment Schedule will be:</p>
+  <table>
+    <tr><th>Number of Payments</th><th>Amount of Each Payment</th><th>When Payments are Due</th></tr>
+    ${semesterRows
+      .map(
+        (r) =>
+          `<tr><td class="center">${r.s.numPagos}</td><td class="center">${formatCurrency(
+            r.s.importePago
+          )}</td><td class="center">${r.dueDate}</td></tr>`
+      )
+      .join("")}
+  </table>
+
+  <p class="small">All prices for the program are printed herein. Contracts will not be sold to a third party at any time. In cases when no payment plan is established, there will be no carrying charges, interest charges, or service charges connected or charged with the program.</p>
+  <p>NAME: ${esc(fullName)} &nbsp;&nbsp;&nbsp;&nbsp; INITIALS: ________________</p>
+
+  <div class="section-title">Termination Policy</div>
+  <p>A student may be dismissed, at the discretion of the School Director, prior to completion of the program. Reasons for termination include but are not limited to the following:</p>
+  <ol>
+    <li>Insufficient academic progress (not maintaining a passing grade)</li>
+    <li>Failure to comply with rules outlined in catalog or pertinent program handbook (when applicable) and college policies</li>
+    <li>Nonpayment of academic costs under terms agreed upon with SABER College administration</li>
+  </ol>
+  <div class="footer-note">Conditions as they appear in all pages are part of this document.</div>
+</div>
+
+<!-- PAGE 4: Signatures -->
+<div class="page">
+  <p>This document and the Catalog are a binding contract between the institution and applicant and no further modification or representation except as herein expressed by both parties will be recognized.</p>
+
+  <div class="section-title">GRADUATION REQUIREMENTS</div>
+  <p>I understand that in order to graduate from the program and to receive a diploma, I must successfully complete the required number of scheduled clock hours/credit hours as specified in the catalog and on the Student Enrollment Agreement, pass all written and practical examination with * ${klass.minGradePct} % average and satisfy all financial obligations to the School.</p>
+
+  <p><strong>Employment Assistance</strong><br/>Upon successful completion of the program, the school will assist each graduate with job placement; however, the school does not guarantee employment.</p>
+
+  <table class="no-border">
+    <tr>
+      <td>${checkbox(klass.methodOfDelivery === "Residential")} Residential</td>
+      <td>${checkbox(klass.methodOfDelivery === "Blended Hybrid")} Blended Hybrid</td>
+      <td>${checkbox(klass.methodOfDelivery === "Full Distance")} Full Distance (Online)</td>
+    </tr>
+  </table>
+
+  <table class="no-border">
+    <tr><td>Start Date:</td><td>${startDate}</td></tr>
+    <tr><td>Anticipated Graduation Date:</td><td>${anticipatedGraduationDate}</td></tr>
+    <tr>
+      <td>Hours and days available:</td>
+      <td>
+        Theory/Lab: ${klass.theoryLabHoursA ?? 0} hrs/day &nbsp;&nbsp; Clinical: ${klass.clinicalHoursA ?? 0} hrs/day<br/>
+        Theory/Lab: ${klass.theoryLabHoursB ?? 0} hrs/day &nbsp;&nbsp; Clinical: ${klass.clinicalHoursB ?? 0} hrs/day
+      </td>
+    </tr>
+    <tr><td>Program Completion Time:</td><td>Months ${klass.monthsTotal} &nbsp;&nbsp; Weeks ${klass.weeksTotal}</td></tr>
+  </table>
+
+  <p class="bold">NOTICE TO PROSPECTIVE STUDENTS: DO NOT SIGN THIS CONTRACT BEFORE YOU HAVE CAREFULLY REVIEWED IT.</p>
+  <p>By my signature, I agree to the terms and conditions of this &ldquo;binding agreement&rdquo;, I also verify that I have read and have received a copy of this Agreement and the Institutional Catalog.</p>
+  <p>The above-listed school and student are entering a &ldquo;binding agreement&rdquo; under which the student will pay tuition and fees as indicated. The parties are bound by the terms of this Agreement and also by the rules, regulations, and other terms set forth in the Institutional Catalog, a copy of which the student hereby attests to having received. The school will instruct the student in the curriculum listed above in accordance with Education Law and Commissioner's Regulations.</p>
+
+  <p>Upon satisfactory completion of the program the student will be awarded a:<br/>
+  ASSOCIATE DEGREE ${checkbox(program.degreeType === "associate")} &nbsp;&nbsp;&nbsp;&nbsp; DIPLOMA ${checkbox(program.degreeType === "diploma")}</p>
+
+  <table class="no-border">
+    <tr><td style="width:60%">Student Signature: ________________________________</td><td>Date: ${esc(student.contractDate ? formatPaymentDate(student.contractDate) : "")}</td></tr>
+    <tr><td>Parent Signature (if student is a minor)</td><td>Date:</td></tr>
+    <tr><td>Accepted by: ${esc(signerName)}</td><td>Date: ${esc(student.contractDate ? formatPaymentDate(student.contractDate) : "")}</td></tr>
+    <tr><td>School Official / Title</td><td></td></tr>
+  </table>
+</div>
+
+</body>
+</html>`;
+}
+
+const ORDINALS = ["1st", "2nd", "3rd", "4th", "5th", "6th"];

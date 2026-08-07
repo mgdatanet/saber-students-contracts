@@ -1,0 +1,16 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "saber-contracts",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": [
+        "R:\\Saber College\\Financial AID Student Contracts\\app\\node_modules\\next\\dist\\bin\\next",
+        "dev",
+        "R:\\Saber College\\Financial AID Student Contracts\\app",
+        "--webpack"
+      ],
+      "port": 3000
+    }
+  ]
+}

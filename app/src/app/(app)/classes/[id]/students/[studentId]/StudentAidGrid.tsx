@@ -1,0 +1,203 @@
+"use client";
+
+import { useMemo, useState, useTransition } from "react";
+import {
+  computeContract,
+  formatCurrency,
+  validateStudent,
+  type SemesterAidInput,
+} from "@/lib/calc";
+import { saveStudentAid } from "@/lib/actions/students";
+
+const FIELDS: { key: keyof SemesterAidInput; label: string }[] = [
+  { key: "credits", label: "Credits" },
+  { key: "fees", label: "Fees" },
+  { key: "pell", label: "Pell" },
+  { key: "sub", label: "Sub" },
+  { key: "unsub", label: "Unsub" },
+  { key: "plus", label: "PLUS" },
+  { key: "efc", label: "EFC" },
+];
+
+export function StudentAidGrid({
+  classId,
+  studentId,
+  ratePerCredit,
+  expectedCredits,
+  hasSixSemesterDates,
+  initialSemesters,
+  identity,
+  locked,
+}: {
+  classId: string;
+  studentId: string;
+  ratePerCredit: number;
+  expectedCredits: number;
+  hasSixSemesterDates: boolean;
+  initialSemesters: SemesterAidInput[];
+  identity: { firstName: string; lastName: string; ssn: string | null; dateOfBirth: string | null };
+  locked: boolean;
+}) {
+  const [semesters, setSemesters] = useState<SemesterAidInput[]>(initialSemesters);
+  const [isPending, startTransition] = useTransition();
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  const totals = useMemo(() => computeContract(semesters, ratePerCredit), [semesters, ratePerCredit]);
+  const validation = useMemo(
+    () => validateStudent(identity, semesters, expectedCredits, hasSixSemesterDates),
+    [identity, semesters, expectedCredits, hasSixSemesterDates]
+  );
+
+  function updateField(n: number, key: keyof SemesterAidInput, value: string) {
+    const num = value === "" ? 0 : Number(value);
+    setSemesters((prev) => prev.map((s) => (s.n === n ? { ...s, [key]: Number.isFinite(num) ? num : 0 } : s)));
+    setSaved(false);
+  }
+
+  function handleSave() {
+    setSaveError(null);
+    startTransition(async () => {
+      const result = await saveStudentAid(classId, studentId, semesters);
+      if (result.error) setSaveError(result.error);
+      else setSaved(true);
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white border border-slate-200 rounded-lg overflow-x-auto">
+        <table className="text-sm min-w-full">
+          <thead className="bg-slate-50 text-slate-500 text-left">
+            <tr>
+              <th className="px-3 py-2 sticky left-0 bg-slate-50">Field</th>
+              {semesters.map((s) => (
+                <th key={s.n} className="px-3 py-2 text-center">
+                  Semester {s.n}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {FIELDS.map((f) => (
+              <tr key={f.key} className="border-t border-slate-100">
+                <td className="px-3 py-1.5 sticky left-0 bg-white font-medium text-slate-700">{f.label}</td>
+                {semesters.map((s) => (
+                  <td key={s.n} className="px-2 py-1.5">
+                    <input
+                      type="number"
+                      step={f.key === "credits" ? "1" : "0.01"}
+                      disabled={locked}
+                      value={s[f.key] === 0 ? "" : s[f.key]}
+                      placeholder="0"
+                      onChange={(e) => updateField(s.n, f.key, e.target.value)}
+                      className="w-24 rounded-md border border-slate-300 px-2 py-1 text-sm text-right disabled:bg-slate-50 disabled:text-slate-400"
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+
+            <tr className="border-t-2 border-slate-200 bg-slate-50">
+              <td className="px-3 py-1.5 sticky left-0 bg-slate-50 font-medium text-slate-700">Total cost</td>
+              {totals.semesters.map((s) => (
+                <td key={s.n} className="px-3 py-1.5 text-right text-slate-600">
+                  {formatCurrency(s.costeSemestre)}
+                </td>
+              ))}
+            </tr>
+            <tr className="bg-slate-50">
+              <td className="px-3 py-1.5 sticky left-0 bg-slate-50 font-medium text-slate-700">Total aid</td>
+              {totals.semesters.map((s) => (
+                <td key={s.n} className="px-3 py-1.5 text-right text-slate-600">
+                  {formatCurrency(s.ayudaSemestre)}
+                </td>
+              ))}
+            </tr>
+            <tr className="bg-slate-50">
+              <td className="px-3 py-1.5 sticky left-0 bg-slate-50 font-medium text-slate-700">Balance</td>
+              {totals.semesters.map((s) => (
+                <td key={s.n} className="px-3 py-1.5 text-right text-slate-600">
+                  {formatCurrency(s.saldo)}
+                </td>
+              ))}
+            </tr>
+            <tr className="bg-slate-50">
+              <td className="px-3 py-1.5 sticky left-0 bg-slate-50 font-medium text-slate-700">Financed</td>
+              {totals.semesters.map((s) => (
+                <td key={s.n} className="px-3 py-1.5 text-right text-slate-600">
+                  {formatCurrency(s.financiado)}
+                </td>
+              ))}
+            </tr>
+            <tr className="bg-slate-50">
+              <td className="px-3 py-1.5 sticky left-0 bg-slate-50 font-medium text-slate-700">Payments</td>
+              {totals.semesters.map((s) => (
+                <td key={s.n} className="px-3 py-1.5 text-right text-slate-600">
+                  {s.numPagos === 0 ? "—" : `${s.numPagos} × ${formatCurrency(s.importePago)}`}
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-lg p-4 grid grid-cols-4 gap-4 text-sm">
+        <div>
+          <div className="text-slate-500">Credits total</div>
+          <div className="font-medium text-slate-900">
+            {totals.creditsTotal} / {expectedCredits}
+          </div>
+        </div>
+        <div>
+          <div className="text-slate-500">Tuition</div>
+          <div className="font-medium text-slate-900">{formatCurrency(totals.matricula)}</div>
+        </div>
+        <div>
+          <div className="text-slate-500">Total cost</div>
+          <div className="font-medium text-slate-900">{formatCurrency(totals.costeTotal)}</div>
+        </div>
+        <div>
+          <div className="text-slate-500">Total aid</div>
+          <div className="font-medium text-slate-900">{formatCurrency(totals.ayudaTotal)}</div>
+        </div>
+      </div>
+
+      {validation.errors.length > 0 && (
+        <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+          <ul className="list-disc list-inside">
+            {validation.errors.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {validation.warnings.length > 0 && (
+        <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
+          <ul className="list-disc list-inside">
+            {validation.warnings.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {saveError && (
+        <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{saveError}</div>
+      )}
+
+      {!locked && (
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isPending}
+            className="rounded-md bg-slate-900 text-white text-sm font-medium px-4 py-2 hover:bg-slate-800 disabled:opacity-50"
+          >
+            {isPending ? "Saving…" : "Save"}
+          </button>
+          {saved && !isPending && <span className="text-sm text-green-600">Saved.</span>}
+        </div>
+      )}
+    </div>
+  );
+}
