@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { signIn, signUp } from "@/lib/actions/auth";
 
 export default async function LoginPage({
@@ -11,6 +12,7 @@ export default async function LoginPage({
     <main className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
+          <Image src="/logo.png" alt="SABER College" width={64} height={64} className="mx-auto mb-2 h-16 w-auto" priority />
           <h1 className="text-xl font-semibold text-slate-900">SABER College</h1>
           <p className="text-sm text-slate-500">Student Enrollment Agreements</p>
         </div>

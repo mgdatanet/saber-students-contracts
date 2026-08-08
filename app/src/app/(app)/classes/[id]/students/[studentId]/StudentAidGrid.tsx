@@ -55,6 +55,19 @@ export function StudentAidGrid({
     setSaved(false);
   }
 
+  function fillFromSemesterOne() {
+    setSemesters((prev) => {
+      const first = prev.find((s) => s.n === 1);
+      if (!first) return prev;
+      return prev.map((s) =>
+        s.n === 1
+          ? s
+          : { ...s, credits: first.credits, fees: first.fees, pell: first.pell, sub: first.sub, unsub: first.unsub, plus: first.plus, efc: first.efc }
+      );
+    });
+    setSaved(false);
+  }
+
   function handleSave() {
     setSaveError(null);
     startTransition(async () => {
@@ -66,6 +79,18 @@ export function StudentAidGrid({
 
   return (
     <div className="space-y-4">
+      {!locked && (
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-medium text-slate-900">Semester Aid</h2>
+          <button
+            type="button"
+            onClick={fillFromSemesterOne}
+            className="text-sm text-slate-600 hover:text-slate-900 border border-slate-300 rounded-md px-3 py-1.5 hover:bg-slate-50"
+          >
+            Fill semesters 2–6 from Semester 1
+          </button>
+        </div>
+      )}
       <div className="bg-white border border-slate-200 rounded-lg overflow-x-auto">
         <table className="text-sm min-w-full">
           <thead className="bg-slate-50 text-slate-500 text-left">

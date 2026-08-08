@@ -6,6 +6,7 @@ import type { Json } from "@/lib/supabase/database.types";
 import { computeContract, validateStudent, type SemesterAidInput } from "@/lib/calc";
 import { renderContractHtml } from "@/lib/pdf/contractHtml";
 import { renderHtmlToPdf } from "@/lib/pdf/renderPdf";
+import { fetchContractTextBlocks } from "@/lib/contractText";
 
 export interface IssueResult {
   success: boolean;
@@ -81,6 +82,7 @@ export async function issueContract(classId: string, studentId: string): Promise
 
   // Step 2: render and store the PDF, then attach its path (the only allowed update).
   try {
+    const textBlocks = await fetchContractTextBlocks();
     const html = renderContractHtml({
       student: {
         firstName: student.first_name,
@@ -122,6 +124,7 @@ export async function issueContract(classId: string, studentId: string): Promise
       semesterDates: (semesterDates ?? []).map((d) => ({ n: d.n, startDate: d.start_date, endDate: d.end_date })),
       signerName: cls.signers?.full_name ?? "",
       contractNumber: contract.contract_number,
+      textBlocks,
     });
 
     const pdfBuffer = await renderHtmlToPdf(html);
@@ -149,9 +152,11 @@ function buildTotalsSnapshot(aid: SemesterAidInput[], rate: number): Json {
   return computeContract(aid, rate) as unknown as Json;
 }
 
-export async function getContractDownloadUrl(pdfPath: string): Promise<string | null> {
+export async function getContractDownloadUrl(pdfPath: string, forceDownload = false): Promise<string | null> {
   const supabase = await createClient();
-  const { data, error } = await supabase.storage.from("contracts").createSignedUrl(pdfPath, 60 * 10);
+  const { data, error } = await supabase.storage
+    .from("contracts")
+    .createSignedUrl(pdfPath, 60 * 10, forceDownload ? { download: true } : undefined);
   if (error) return null;
   return data.signedUrl;
 }

@@ -4,8 +4,69 @@ import {
   formatDateOfBirth,
   formatGraduationDate,
   formatPaymentDate,
+  formatPhone,
+  formatSsn,
   type SemesterAidInput,
 } from "@/lib/calc";
+import { applyTokens, type ContractTextBlocks } from "@/lib/contractText";
+import { LOGO_BASE64_PNG } from "./logoBase64";
+
+// Fallback copy used only if a block is somehow missing from the database
+// (e.g. right after a fresh install before the seed migration runs). The
+// database (contract_text_blocks table, admin-editable) is the source of
+// truth Financial Aid actually edits when the school's policies change.
+const DEFAULT_TEXT_BLOCKS: ContractTextBlocks = {
+  cancellation_refund_policy: `
+    <tr><td>This Enrollment Agreement, in addition to the Institutional Catalog, constitutes a binding agreement between the student and the college upon acceptance. (Initial) __________.</td></tr>
+    <tr><td><strong>Refund / Cancellation Policy</strong></td></tr>
+    <tr><td>Our outlined refund policy is designed according to Fair Consumer Practices. Should student be terminated or cancelled for any reason, all refunds will be made according to following refund schedule.
+    <ul>
+      <li>Cancellation must be made in person or Certified mail.</li>
+      <li>If tuition and fees are collected in advance of the start date of classes and the student does not begin classes or withdraws on the first day of classes, no more than $150 application and registration fees may be retained by the institution.
+        <div class="small">The refund policy shall provide for cancellation of any obligation, other than a book and supply assessment for supplies, materials and kits which are not returnable because of use, within 3 working days from the student's signing an enrollment agreement or contract.</div>
+      </li>
+      <li>The refund policy for students attending SABER College, who incur a financial obligation shall be as follows: Students are charged by the semester based on the number of credits per course, the refund policy shall provide a formula for proration of refunds based upon the length of time the student remains enrolled, up to a minimum of 20%.
+        <div class="small">
+          For example:<br/>
+          (A) Cancellation after attendance has begun, through 20% completion of the semester, will result in a Pro Rata refund computed on the number of hours completed to the total semester hours.<br/>
+          (B) Cancellation after completing more than 20% of the semester will result in no refund.
+        </div>
+      </li>
+      <li>Termination Date: The termination date for refund computation purposes is the last date of actual attendance by the student unless earlier written notice is received.</li>
+    </ul>
+    </td></tr>
+    <tr><td><strong>Disclosures as per Rule 6E-1.0032(6)(i),FAC</strong>
+      <ul>
+        <li>Refund shall be made within 30 days of the date that the institution determines that the student has withdrawn.</li>
+        <li>Nonrefundable fees shall not exceed $150.00</li>
+        <li>SABER COLLEGE Statement: Only Students who were denied entry into the school will be kept for one year. If a student is enrolled in the school and then later dismissed, those records will be maintained indefinitely.</li>
+      </ul>
+    </td></tr>
+    <tr><td>All prices for program are as printed herein. There are no carrying charges, interest charges, or service charges connected or charged with any of these programs. Contracts are not sold to a third party at any time. Cost of credit is included in the price cost for the goods and services.</td></tr>
+    <tr><td>Program Cost: (See attached for semester Detail) Student will not need to submit more than one application or registration. Charges will be made automatically per semester.</td></tr>
+    <tr><td>Non-Refundable Registration Fee per Semester: {{REGISTRATION_FEE_PER_SEM}} per semester.</td></tr>`,
+  methods_of_payment_note: `
+    <tr><td>( X ) Full Payment at time of signing enrollment agreement</td></tr>
+    <tr><td>(   ) Registration and Application fee at the time of signing enrollment agreement with balance paid prior to program start date.</td></tr>
+    <tr><td>(   ) Registration and Application fee at the time of signing enrollment agreement with balance paid prior to graduation.</td></tr>`,
+  methods_of_payment_footnote:
+    "NOTE: When school offers a payment plan with four or more payments, the federal boxes will be included in the contract. Enter N/A or LINE THROUGH, if not applicable.",
+  termination_policy: `
+    <p>A student may be dismissed, at the discretion of the School Director, prior to completion of the program. Reasons for termination include but are not limited to the following:</p>
+    <ol>
+      <li>Insufficient academic progress (not maintaining a passing grade)</li>
+      <li>Failure to comply with rules outlined in catalog or pertinent program handbook (when applicable) and college policies</li>
+      <li>Nonpayment of academic costs under terms agreed upon with SABER College administration</li>
+    </ol>`,
+  graduation_requirements:
+    "I understand that in order to graduate from the program and to receive a diploma, I must successfully complete the required number of scheduled clock hours/credit hours as specified in the catalog and on the Student Enrollment Agreement, pass all written and practical examination with * {{MIN_GRADE_PCT}} % average and satisfy all financial obligations to the School.",
+  employment_assistance:
+    "<strong>Employment Assistance</strong><br/>Upon successful completion of the program, the school will assist each graduate with job placement; however, the school does not guarantee employment.",
+  notice_and_agreement: `
+    <p class="bold">NOTICE TO PROSPECTIVE STUDENTS: DO NOT SIGN THIS CONTRACT BEFORE YOU HAVE CAREFULLY REVIEWED IT.</p>
+    <p>By my signature, I agree to the terms and conditions of this &ldquo;binding agreement&rdquo;, I also verify that I have read and have received a copy of this Agreement and the Institutional Catalog.</p>
+    <p>The above-listed school and student are entering a &ldquo;binding agreement&rdquo; under which the student will pay tuition and fees as indicated. The parties are bound by the terms of this Agreement and also by the rules, regulations, and other terms set forth in the Institutional Catalog, a copy of which the student hereby attests to having received. The school will instruct the student in the curriculum listed above in accordance with Education Law and Commissioner's Regulations.</p>`,
+};
 
 export interface ContractHtmlInput {
   student: {
@@ -48,6 +109,8 @@ export interface ContractHtmlInput {
   semesterDates: { n: number; startDate: string; endDate: string }[];
   signerName: string;
   contractNumber: string;
+  /** Admin-editable legal text (contract_text_blocks table). Falls back to DEFAULT_TEXT_BLOCKS for any missing key. */
+  textBlocks?: ContractTextBlocks;
 }
 
 function esc(v: string | number | null | undefined): string {
@@ -61,8 +124,16 @@ function checkbox(checked: boolean): string {
 
 export function renderContractHtml(input: ContractHtmlInput): string {
   const { student, program, klass, semesters, semesterDates, signerName, contractNumber } = input;
+  const blocks: ContractTextBlocks = { ...DEFAULT_TEXT_BLOCKS, ...input.textBlocks };
   const totals = computeContract(semesters, klass.tuitionPerCredit);
   const fullName = [student.firstName, student.lastName].filter(Boolean).join(" ");
+
+  const cancellationRefundPolicy = applyTokens(blocks.cancellation_refund_policy, {
+    REGISTRATION_FEE_PER_SEM: formatCurrency(klass.registrationFeePerSem),
+  });
+  const graduationRequirements = applyTokens(blocks.graduation_requirements, {
+    MIN_GRADE_PCT: String(klass.minGradePct),
+  });
 
   // Total Program Cost = coste_total = matricula + fees_totales (ESPECIFICACION.md
   // section 4). The individual fee line items above (testing, application,
@@ -106,8 +177,9 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   .no-border td, .no-border th { border: none; }
   h1 { font-size: 13pt; margin: 0 0 4px; }
   h2 { font-size: 10pt; background: #ddd; padding: 3px 6px; margin: 10px 0 0; }
-  .header { display: flex; border: 1px solid #333; }
-  .header .logo { width: 30%; background: #999; padding: 8px; color: #fff; }
+  .header { display: flex; border: 1px solid #333; align-items: center; }
+  .header .logo { width: 30%; padding: 8px; display: flex; align-items: center; justify-content: center; }
+  .header .logo img { max-width: 100%; max-height: 70px; object-fit: contain; }
   .header .titlebox { width: 70%; text-align: center; padding: 10px; }
   .small { font-size: 8pt; color: #444; }
   .center { text-align: center; }
@@ -123,7 +195,7 @@ export function renderContractHtml(input: ContractHtmlInput): string {
 <!-- PAGE 1: Information -->
 <div class="page">
   <div class="header">
-    <div class="logo"><strong>SABER College</strong></div>
+    <div class="logo"><img src="${LOGO_BASE64_PNG}" alt="SABER College" /></div>
     <div class="titlebox">
       <div>3990 W. FLAGLER STREET</div>
       <div>Miami, Florida 33134</div>
@@ -134,10 +206,10 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   <div class="section-title">Information</div>
   <table>
     <tr><td colspan="2">This Agreement is by and between SABER College, 3990 W. Flagler Street, Miami, Florida 33134, (The &ldquo;College&rdquo;) and (the &ldquo;Student&rdquo;) listed below:</td></tr>
-    <tr><td class="bold">STUDENT NAME: ${esc(fullName)}</td><td class="bold">SS #: ${esc(student.ssn)}</td></tr>
+    <tr><td class="bold">STUDENT NAME: ${esc(fullName)}</td><td class="bold">SS #: ${esc(formatSsn(student.ssn))}</td></tr>
     <tr>
       <td>Date of Birth: ${esc(student.dateOfBirth ? formatDateOfBirth(student.dateOfBirth) : "")}</td>
-      <td>Telephone: ${esc(student.phone)} &nbsp;&nbsp; Cell phone: ${esc(student.mobile)}</td>
+      <td>Telephone: ${esc(formatPhone(student.phone))} &nbsp;&nbsp; Cell phone: ${esc(formatPhone(student.mobile))}</td>
     </tr>
     <tr><td colspan="2">Current Address: ${esc(student.address)}</td></tr>
     <tr>
@@ -157,34 +229,7 @@ export function renderContractHtml(input: ContractHtmlInput): string {
 <div class="page">
   <div class="section-title">Cancellation and Refund Policy</div>
   <table class="no-border">
-    <tr><td>This Enrollment Agreement, in addition to the Institutional Catalog, constitutes a binding agreement between the student and the college upon acceptance. (Initial) __________.</td></tr>
-    <tr><td><strong>Refund / Cancellation Policy</strong></td></tr>
-    <tr><td>Our outlined refund policy is designed according to Fair Consumer Practices. Should student be terminated or cancelled for any reason, all refunds will be made according to following refund schedule.
-    <ul>
-      <li>Cancellation must be made in person or Certified mail.</li>
-      <li>If tuition and fees are collected in advance of the start date of classes and the student does not begin classes or withdraws on the first day of classes, no more than $150 application and registration fees may be retained by the institution.
-        <div class="small">The refund policy shall provide for cancellation of any obligation, other than a book and supply assessment for supplies, materials and kits which are not returnable because of use, within 3 working days from the student's signing an enrollment agreement or contract.</div>
-      </li>
-      <li>The refund policy for students attending SABER College, who incur a financial obligation shall be as follows: Students are charged by the semester based on the number of credits per course, the refund policy shall provide a formula for proration of refunds based upon the length of time the student remains enrolled, up to a minimum of 20%.
-        <div class="small">
-          For example:<br/>
-          (A) Cancellation after attendance has begun, through 20% completion of the semester, will result in a Pro Rata refund computed on the number of hours completed to the total semester hours.<br/>
-          (B) Cancellation after completing more than 20% of the semester will result in no refund.
-        </div>
-      </li>
-      <li>Termination Date: The termination date for refund computation purposes is the last date of actual attendance by the student unless earlier written notice is received.</li>
-    </ul>
-    </td></tr>
-    <tr><td><strong>Disclosures as per Rule 6E-1.0032(6)(i),FAC</strong>
-      <ul>
-        <li>Refund shall be made within 30 days of the date that the institution determines that the student has withdrawn.</li>
-        <li>Nonrefundable fees shall not exceed $150.00</li>
-        <li>SABER COLLEGE Statement: Only Students who were denied entry into the school will be kept for one year. If a student is enrolled in the school and then later dismissed, those records will be maintained indefinitely.</li>
-      </ul>
-    </td></tr>
-    <tr><td>All prices for program are as printed herein. There are no carrying charges, interest charges, or service charges connected or charged with any of these programs. Contracts are not sold to a third party at any time. Cost of credit is included in the price cost for the goods and services.</td></tr>
-    <tr><td>Program Cost: (See attached for semester Detail) Student will not need to submit more than one application or registration. Charges will be made automatically per semester.</td></tr>
-    <tr><td>Non-Refundable Registration Fee per Semester: ${formatCurrency(klass.registrationFeePerSem)} per semester.</td></tr>
+    ${cancellationRefundPolicy}
   </table>
   <div class="footer-note">Conditions as they appear in all pages are part of this document.</div>
 </div>
@@ -219,11 +264,9 @@ export function renderContractHtml(input: ContractHtmlInput): string {
 
   <div class="section-title">METHODS OF PAYMENT</div>
   <table class="no-border">
-    <tr><td>( X ) Full Payment at time of signing enrollment agreement</td></tr>
-    <tr><td>(   ) Registration and Application fee at the time of signing enrollment agreement with balance paid prior to program start date.</td></tr>
-    <tr><td>(   ) Registration and Application fee at the time of signing enrollment agreement with balance paid prior to graduation.</td></tr>
+    ${blocks.methods_of_payment_note}
   </table>
-  <p class="small">NOTE: When school offers a payment plan with four or more payments, the federal boxes will be included in the contract. Enter N/A or LINE THROUGH, if not applicable.</p>
+  <p class="small">${blocks.methods_of_payment_footnote}</p>
 
   <table>
     <tr>
@@ -265,12 +308,7 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   <p>NAME: ${esc(fullName)} &nbsp;&nbsp;&nbsp;&nbsp; INITIALS: ________________</p>
 
   <div class="section-title">Termination Policy</div>
-  <p>A student may be dismissed, at the discretion of the School Director, prior to completion of the program. Reasons for termination include but are not limited to the following:</p>
-  <ol>
-    <li>Insufficient academic progress (not maintaining a passing grade)</li>
-    <li>Failure to comply with rules outlined in catalog or pertinent program handbook (when applicable) and college policies</li>
-    <li>Nonpayment of academic costs under terms agreed upon with SABER College administration</li>
-  </ol>
+  ${blocks.termination_policy}
   <div class="footer-note">Conditions as they appear in all pages are part of this document.</div>
 </div>
 
@@ -279,9 +317,9 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   <p>This document and the Catalog are a binding contract between the institution and applicant and no further modification or representation except as herein expressed by both parties will be recognized.</p>
 
   <div class="section-title">GRADUATION REQUIREMENTS</div>
-  <p>I understand that in order to graduate from the program and to receive a diploma, I must successfully complete the required number of scheduled clock hours/credit hours as specified in the catalog and on the Student Enrollment Agreement, pass all written and practical examination with * ${klass.minGradePct} % average and satisfy all financial obligations to the School.</p>
+  <p>${graduationRequirements}</p>
 
-  <p><strong>Employment Assistance</strong><br/>Upon successful completion of the program, the school will assist each graduate with job placement; however, the school does not guarantee employment.</p>
+  <p>${blocks.employment_assistance}</p>
 
   <table class="no-border">
     <tr>
@@ -304,9 +342,7 @@ export function renderContractHtml(input: ContractHtmlInput): string {
     <tr><td>Program Completion Time:</td><td>Months ${klass.monthsTotal} &nbsp;&nbsp; Weeks ${klass.weeksTotal}</td></tr>
   </table>
 
-  <p class="bold">NOTICE TO PROSPECTIVE STUDENTS: DO NOT SIGN THIS CONTRACT BEFORE YOU HAVE CAREFULLY REVIEWED IT.</p>
-  <p>By my signature, I agree to the terms and conditions of this &ldquo;binding agreement&rdquo;, I also verify that I have read and have received a copy of this Agreement and the Institutional Catalog.</p>
-  <p>The above-listed school and student are entering a &ldquo;binding agreement&rdquo; under which the student will pay tuition and fees as indicated. The parties are bound by the terms of this Agreement and also by the rules, regulations, and other terms set forth in the Institutional Catalog, a copy of which the student hereby attests to having received. The school will instruct the student in the curriculum listed above in accordance with Education Law and Commissioner's Regulations.</p>
+  ${blocks.notice_and_agreement}
 
   <p>Upon satisfactory completion of the program the student will be awarded a:<br/>
   ASSOCIATE DEGREE ${checkbox(program.degreeType === "associate")} &nbsp;&nbsp;&nbsp;&nbsp; DIPLOMA ${checkbox(program.degreeType === "diploma")}</p>

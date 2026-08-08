@@ -1,7 +1,10 @@
 .claude/settings.local.json
 
-# Never commit credentials, recovery codes, or screenshots dropped into the project folder
-Vercel Recovery Codes/
+# Never commit credentials, recovery codes, screenshots, or real student data
+# dropped into the project folder for reference. Anything the app actually
+# needs (like the logo) gets copied into app/public/ instead, which IS tracked.
+*Recovery Codes*/
 Capture*.JPG
 Capture*.jpg
 Capture*.png
+_Development Examples or Screenshots/

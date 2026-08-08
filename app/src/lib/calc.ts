@@ -251,3 +251,23 @@ export function formatDateOfBirth(isoDate: string): string {
   const yy = d.getFullYear() % 100;
   return `${d.getMonth() + 1}/${d.getDate()}/${yy.toString().padStart(2, "0")}`;
 }
+
+/**
+ * Normalizes SSN to 999-99-9999 on the printed contract no matter how it was
+ * typed (with/without dashes, spaces). Falls back to the raw input if it
+ * doesn't have 9 digits, rather than silently hiding bad data.
+ */
+export function formatSsn(raw: string | null | undefined): string {
+  if (!raw) return "";
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length !== 9) return raw;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
+}
+
+/** Normalizes a 10-digit US phone number to 999-999-9999 on the printed contract. */
+export function formatPhone(raw: string | null | undefined): string {
+  if (!raw) return "";
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length !== 10) return raw;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+}

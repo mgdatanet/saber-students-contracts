@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeContract, formatCurrency, validateStudent, type SemesterAidInput } from "../calc";
+import { computeContract, formatCurrency, formatPhone, formatSsn, validateStudent, type SemesterAidInput } from "../calc";
 
 const RATE = 582;
 
@@ -162,6 +162,21 @@ describe("edge cases from ESPECIFICACION.md section 6", () => {
     expect(formatCurrency(1984)).toBe("$1,984.00");
     expect(formatCurrency(-616)).toBe("($616.00)");
     expect(formatCurrency("N/A")).toBe("N/A");
+  });
+
+  it("formatSsn normalizes to 999-99-9999 regardless of how it was typed", () => {
+    expect(formatSsn("307830409")).toBe("307-83-0409");
+    expect(formatSsn("307-83-0409")).toBe("307-83-0409");
+    expect(formatSsn("307 83 0409")).toBe("307-83-0409");
+    expect(formatSsn(null)).toBe("");
+    expect(formatSsn("123")).toBe("123"); // not 9 digits: leave as-is rather than mangle it
+  });
+
+  it("formatPhone normalizes to 999-999-9999 regardless of how it was typed", () => {
+    expect(formatPhone("7866514796")).toBe("786-651-4796");
+    expect(formatPhone("786-651-4796")).toBe("786-651-4796");
+    expect(formatPhone(null)).toBe("");
+    expect(formatPhone("0")).toBe("0"); // not 10 digits: leave as-is
   });
 
   it("REGRESSION: 'Total aid exceeds total cost' must use the real tuition rate, not $0/credit", () => {
