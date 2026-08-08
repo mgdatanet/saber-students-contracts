@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createClass } from "@/lib/actions/classes";
 import { ClassForm } from "./ClassForm";
 
 export default async function NewClassPage({
@@ -17,7 +18,7 @@ export default async function NewClassPage({
     <div className="max-w-4xl">
       <h1 className="text-lg font-semibold text-slate-900 mb-4">New Class</h1>
       <div className="bg-white border border-slate-200 rounded-lg p-6">
-        <ClassForm programs={programs ?? []} signers={signers ?? []} error={error} />
+        <ClassForm action={createClass} programs={programs ?? []} signers={signers ?? []} error={error} />
       </div>
     </div>
   );

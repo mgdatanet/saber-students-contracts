@@ -183,6 +183,50 @@ export type Database = {
           },
         ]
       }
+      contract_theme: {
+        Row: {
+          base_font_size_pt: number
+          border_color: string
+          font_family: string
+          id: string
+          logo_max_height_px: number
+          primary_color: string
+          section_title_text_color: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          base_font_size_pt?: number
+          border_color?: string
+          font_family?: string
+          id?: string
+          logo_max_height_px?: number
+          primary_color?: string
+          section_title_text_color?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          base_font_size_pt?: number
+          border_color?: string
+          font_family?: string
+          id?: string
+          logo_max_height_px?: number
+          primary_color?: string
+          section_title_text_color?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_theme_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contracts: {
         Row: {
           class_id: string

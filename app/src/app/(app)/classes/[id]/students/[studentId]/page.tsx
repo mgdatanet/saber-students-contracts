@@ -5,6 +5,7 @@ import { saveStudentIdentity } from "@/lib/actions/students";
 import { StudentAidGrid } from "./StudentAidGrid";
 import { GenerateContractButton } from "./GenerateContractButton";
 import { DownloadContractLink } from "../../DownloadContractLink";
+import { DeleteStudentButton } from "./DeleteStudentButton";
 
 export default async function StudentDetailPage({
   params,
@@ -64,7 +65,14 @@ export default async function StudentDetailPage({
               <DownloadContractLink pdfPath={contract.pdf_path} />
             </div>
           ) : (
-            <GenerateContractButton classId={classId} studentId={studentId} />
+            <div className="flex items-center gap-4">
+              <DeleteStudentButton
+                classId={classId}
+                studentId={studentId}
+                studentName={`${student.first_name} ${student.last_name}`}
+              />
+              <GenerateContractButton classId={classId} studentId={studentId} />
+            </div>
           )}
         </div>
       </div>

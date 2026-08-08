@@ -7,6 +7,7 @@ import { computeContract, validateStudent, type SemesterAidInput } from "@/lib/c
 import { renderContractHtml } from "@/lib/pdf/contractHtml";
 import { renderHtmlToPdf } from "@/lib/pdf/renderPdf";
 import { fetchContractTextBlocks } from "@/lib/contractText";
+import { fetchContractTheme } from "@/lib/contractTheme";
 
 export interface IssueResult {
   success: boolean;
@@ -82,7 +83,7 @@ export async function issueContract(classId: string, studentId: string): Promise
 
   // Step 2: render and store the PDF, then attach its path (the only allowed update).
   try {
-    const textBlocks = await fetchContractTextBlocks();
+    const [textBlocks, theme] = await Promise.all([fetchContractTextBlocks(), fetchContractTheme()]);
     const html = renderContractHtml({
       student: {
         firstName: student.first_name,
@@ -125,6 +126,7 @@ export async function issueContract(classId: string, studentId: string): Promise
       signerName: cls.signers?.full_name ?? "",
       contractNumber: contract.contract_number,
       textBlocks,
+      theme,
     });
 
     const pdfBuffer = await renderHtmlToPdf(html);

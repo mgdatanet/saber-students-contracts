@@ -5,6 +5,7 @@ import { addStudent } from "@/lib/actions/classes";
 import { computeContract, validateStudent } from "@/lib/calc";
 import { GenerateAllButton } from "./GenerateAllButton";
 import { DownloadContractLink } from "./DownloadContractLink";
+import { DeleteClassButton } from "../DeleteClassButton";
 
 export default async function ClassDetailPage({
   params,
@@ -75,7 +76,18 @@ export default async function ClassDetailPage({
               {cls.locked ? "Locked" : "Open"}
             </p>
           </div>
-          {readyCount > 0 && <GenerateAllButton classId={id} readyCount={readyCount} />}
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/classes/${id}/edit`}
+              className="rounded-md border border-slate-300 text-slate-700 text-sm font-medium px-4 py-2 hover:bg-slate-50"
+            >
+              Edit Class
+            </Link>
+            {!cls.locked && (
+              <DeleteClassButton classId={id} classCode={cls.code} afterDeleteHref="/classes" />
+            )}
+            {readyCount > 0 && <GenerateAllButton classId={id} readyCount={readyCount} />}
+          </div>
         </div>
       </div>
 

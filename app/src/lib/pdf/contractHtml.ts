@@ -9,6 +9,7 @@ import {
   type SemesterAidInput,
 } from "@/lib/calc";
 import { applyTokens, type ContractTextBlocks } from "@/lib/contractText";
+import { DEFAULT_CONTRACT_THEME, type ContractTheme } from "@/lib/contractTheme";
 import { LOGO_BASE64_PNG } from "./logoBase64";
 
 // Fallback copy used only if a block is somehow missing from the database
@@ -111,6 +112,8 @@ export interface ContractHtmlInput {
   contractNumber: string;
   /** Admin-editable legal text (contract_text_blocks table). Falls back to DEFAULT_TEXT_BLOCKS for any missing key. */
   textBlocks?: ContractTextBlocks;
+  /** Safe visual customization (colors, font, logo size). Legal layout/structure is not affected. */
+  theme?: ContractTheme;
 }
 
 function esc(v: string | number | null | undefined): string {
@@ -125,6 +128,7 @@ function checkbox(checked: boolean): string {
 export function renderContractHtml(input: ContractHtmlInput): string {
   const { student, program, klass, semesters, semesterDates, signerName, contractNumber } = input;
   const blocks: ContractTextBlocks = { ...DEFAULT_TEXT_BLOCKS, ...input.textBlocks };
+  const theme: ContractTheme = { ...DEFAULT_CONTRACT_THEME, ...input.theme };
   const totals = computeContract(semesters, klass.tuitionPerCredit);
   const fullName = [student.firstName, student.lastName].filter(Boolean).join(" ");
 
@@ -169,23 +173,23 @@ export function renderContractHtml(input: ContractHtmlInput): string {
 <style>
   @page { size: letter; margin: 0.4in; }
   * { box-sizing: border-box; }
-  body { font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; color: #111; margin: 0; }
+  body { font-family: ${theme.fontFamily}; font-size: ${theme.baseFontSizePt}pt; color: #111; margin: 0; }
   .page { page-break-after: always; }
   .page:last-child { page-break-after: auto; }
   table { width: 100%; border-collapse: collapse; }
-  td, th { border: 1px solid #333; padding: 4px 6px; vertical-align: top; }
+  td, th { border: 1px solid ${theme.borderColor}; padding: 4px 6px; vertical-align: top; }
   .no-border td, .no-border th { border: none; }
   h1 { font-size: 13pt; margin: 0 0 4px; }
   h2 { font-size: 10pt; background: #ddd; padding: 3px 6px; margin: 10px 0 0; }
-  .header { display: flex; border: 1px solid #333; align-items: center; }
+  .header { display: flex; border: 1px solid ${theme.borderColor}; align-items: center; }
   .header .logo { width: 30%; padding: 8px; display: flex; align-items: center; justify-content: center; }
-  .header .logo img { max-width: 100%; max-height: 70px; object-fit: contain; }
+  .header .logo img { max-width: 100%; max-height: ${theme.logoMaxHeightPx}px; object-fit: contain; }
   .header .titlebox { width: 70%; text-align: center; padding: 10px; }
   .small { font-size: 8pt; color: #444; }
   .center { text-align: center; }
   .right { text-align: right; }
   .bold { font-weight: bold; }
-  .section-title { background: #ccc; text-align: center; font-weight: bold; padding: 3px; }
+  .section-title { background: ${theme.primaryColor}; color: ${theme.sectionTitleTextColor}; text-align: center; font-weight: bold; padding: 3px; }
   .footer-note { text-align: center; font-size: 8pt; margin-top: 8px; }
   ul { margin: 4px 0; padding-left: 18px; }
 </style>

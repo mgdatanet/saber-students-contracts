@@ -4,7 +4,15 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deleteClass } from "@/lib/actions/classes";
 
-export function DeleteClassButton({ classId, classCode }: { classId: string; classCode: string }) {
+export function DeleteClassButton({
+  classId,
+  classCode,
+  afterDeleteHref,
+}: {
+  classId: string;
+  classCode: string;
+  afterDeleteHref?: string;
+}) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -17,6 +25,7 @@ export function DeleteClassButton({ classId, classCode }: { classId: string; cla
     startTransition(async () => {
       const result = await deleteClass(classId);
       if (!result.success) setError(result.error ?? "Could not delete class");
+      else if (afterDeleteHref) router.push(afterDeleteHref);
       else router.refresh();
     });
   }
