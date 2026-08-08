@@ -8,7 +8,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200">
+      <header className="bg-white border-b border-slate-200 print:hidden">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/classes" className="flex items-center gap-2 font-semibold text-slate-900">
@@ -18,6 +18,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <nav className="flex items-center gap-4 text-sm">
               <Link href="/classes" className="text-slate-600 hover:text-slate-900">
                 Classes
+              </Link>
+              <Link href="/reports" className="text-slate-600 hover:text-slate-900">
+                Reports
               </Link>
               {profile.role === "admin" && (
                 <>
@@ -29,6 +32,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                   </Link>
                   <Link href="/contract-text" className="text-slate-600 hover:text-slate-900">
                     Contract Text
+                  </Link>
+                  <Link href="/users" className="text-slate-600 hover:text-slate-900">
+                    Users
                   </Link>
                 </>
               )}
