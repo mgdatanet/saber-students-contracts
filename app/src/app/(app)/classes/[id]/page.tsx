@@ -49,7 +49,8 @@ export default async function ClassDetailPage({
       { firstName: s.first_name, lastName: s.last_name, ssn: s.ssn, dateOfBirth: s.date_of_birth },
       aid,
       cls.credits_total,
-      hasSixSemesterDates
+      hasSixSemesterDates,
+      cls.tuition_per_credit
     );
     const totals = computeContract(aid, cls.tuition_per_credit);
     const hasContract = (s.contracts?.length ?? 0) > 0;

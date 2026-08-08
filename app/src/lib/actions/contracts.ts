@@ -52,7 +52,8 @@ export async function issueContract(classId: string, studentId: string): Promise
     { firstName: student.first_name, lastName: student.last_name, ssn: student.ssn, dateOfBirth: student.date_of_birth },
     aid,
     cls.credits_total,
-    hasSixSemesterDates
+    hasSixSemesterDates,
+    cls.tuition_per_credit
   );
 
   if (!validation.readyToIssue) {

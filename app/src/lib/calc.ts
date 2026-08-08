@@ -159,7 +159,8 @@ export function validateStudent(
   identity: StudentIdentity,
   semesters: SemesterAidInput[],
   expectedCredits: number,
-  classHasSixSemesterDates: boolean
+  classHasSixSemesterDates: boolean,
+  ratePerCredit: number = 0
 ): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -203,7 +204,7 @@ export function validateStudent(
     });
   }
 
-  const ratedTotals = computeContract(semesters, 0);
+  const ratedTotals = computeContract(semesters, ratePerCredit);
   if (ratedTotals.ayudaTotal > ratedTotals.costeTotal && ratedTotals.costeTotal > 0) {
     warnings.push("Total aid exceeds total cost");
   }

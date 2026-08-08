@@ -45,8 +45,8 @@ export function StudentAidGrid({
 
   const totals = useMemo(() => computeContract(semesters, ratePerCredit), [semesters, ratePerCredit]);
   const validation = useMemo(
-    () => validateStudent(identity, semesters, expectedCredits, hasSixSemesterDates),
-    [identity, semesters, expectedCredits, hasSixSemesterDates]
+    () => validateStudent(identity, semesters, expectedCredits, hasSixSemesterDates, ratePerCredit),
+    [identity, semesters, expectedCredits, hasSixSemesterDates, ratePerCredit]
   );
 
   function updateField(n: number, key: keyof SemesterAidInput, value: string) {

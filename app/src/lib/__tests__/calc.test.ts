@@ -62,7 +62,8 @@ describe("computeContract — Ana Muguerza Horta (aid covers almost everything)"
       { firstName: "Ana", lastName: "Muguerza Horta", ssn: "307-83-0409", dateOfBirth: "2002-08-12" },
       ana,
       80,
-      true
+      true,
+      RATE
     );
     expect(v.errors).toEqual([]);
     expect(v.readyToIssue).toBe(true);
@@ -96,7 +97,8 @@ describe("computeContract — Karelia Montero Guerra (mixed: semester 4 is N/A i
       { firstName: "Karelia", lastName: "Montero Guerra", ssn: "382-45-0476", dateOfBirth: "1996-02-07" },
       karelia,
       80,
-      true
+      true,
+      RATE
     );
     expect(v.errors).toEqual([]);
     expect(v.readyToIssue).toBe(true);
@@ -138,7 +140,8 @@ describe("edge cases from ESPECIFICACION.md section 6", () => {
       { firstName: "Ana", lastName: "Muguerza Horta", ssn: "307-83-0409", dateOfBirth: "2002-08-12" },
       ana,
       80,
-      true
+      true,
+      RATE
     );
     expect(v.errors.some((e) => e.includes("EFC"))).toBe(false);
   });
@@ -149,7 +152,8 @@ describe("edge cases from ESPECIFICACION.md section 6", () => {
       { firstName: "Ana", lastName: "Muguerza Horta", ssn: "307-83-0409", dateOfBirth: "2002-08-12" },
       bad,
       80,
-      true
+      true,
+      RATE
     );
     expect(v.errors).toContain("Semester 1: Fees cannot be negative");
   });
@@ -158,5 +162,32 @@ describe("edge cases from ESPECIFICACION.md section 6", () => {
     expect(formatCurrency(1984)).toBe("$1,984.00");
     expect(formatCurrency(-616)).toBe("($616.00)");
     expect(formatCurrency("N/A")).toBe("N/A");
+  });
+
+  it("REGRESSION: 'Total aid exceeds total cost' must use the real tuition rate, not $0/credit", () => {
+    // Bug caught in production verification: validateStudent computed this
+    // warning with rate=0, so total cost collapsed to just the summed Fees
+    // field (~$2,846) while aid stayed at its real value (~$46,954) —
+    // tripping a false positive on every normal student. Ana's real totals
+    // (cost $49,406 > aid $46,954) must NOT trigger this warning.
+    const v = validateStudent(
+      { firstName: "Ana", lastName: "Muguerza Horta", ssn: "307-83-0409", dateOfBirth: "2002-08-12" },
+      ana,
+      80,
+      true,
+      RATE
+    );
+    expect(v.warnings).not.toContain("Total aid exceeds total cost");
+
+    // and it must still fire for a genuinely over-funded student
+    const overfunded: SemesterAidInput[] = ana.map((s) => ({ ...s, pell: s.pell + 10000 }));
+    const v2 = validateStudent(
+      { firstName: "Ana", lastName: "Muguerza Horta", ssn: "307-83-0409", dateOfBirth: "2002-08-12" },
+      overfunded,
+      80,
+      true,
+      RATE
+    );
+    expect(v2.warnings).toContain("Total aid exceeds total cost");
   });
 });
