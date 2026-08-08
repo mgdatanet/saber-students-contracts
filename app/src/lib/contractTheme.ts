@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
+// Pure constants/types only — safe to import from Client Components.
+// The DB-fetching function lives in contractThemeServer.ts (server-only).
 
 export interface ContractTheme {
   primaryColor: string;
@@ -25,19 +26,3 @@ export const FONT_FAMILY_OPTIONS = [
   { value: "'Times New Roman', Times, serif", label: "Times New Roman (serif)" },
   { value: "Verdana, Geneva, sans-serif", label: "Verdana" },
 ];
-
-export async function fetchContractTheme(): Promise<ContractTheme> {
-  const supabase = await createClient();
-  const { data } = await supabase.from("contract_theme").select("*").eq("id", "default").single();
-
-  if (!data) return DEFAULT_CONTRACT_THEME;
-
-  return {
-    primaryColor: data.primary_color,
-    sectionTitleTextColor: data.section_title_text_color,
-    borderColor: data.border_color,
-    fontFamily: data.font_family,
-    baseFontSizePt: Number(data.base_font_size_pt),
-    logoMaxHeightPx: data.logo_max_height_px,
-  };
-}

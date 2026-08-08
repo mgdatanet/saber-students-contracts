@@ -81,8 +81,10 @@ export default async function StudentDetailPage({
         <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{errorParam}</div>
       )}
 
-      <details className="bg-white border border-slate-200 rounded-lg p-4" open={!contract}>
-        <summary className="text-sm font-medium text-slate-900 cursor-pointer">Student details</summary>
+      <div className="bg-white border border-slate-200 rounded-lg p-4">
+        <h2 className="text-sm font-medium text-slate-900">
+          {contract ? "Student Details" : "Edit Student Details"}
+        </h2>
         <form
           action={saveStudentIdentity.bind(null, classId, studentId)}
           className="grid grid-cols-3 gap-3 mt-3"
@@ -119,7 +121,7 @@ export default async function StudentDetailPage({
             </div>
           )}
         </form>
-      </details>
+      </div>
 
       <StudentAidGrid
         classId={classId}

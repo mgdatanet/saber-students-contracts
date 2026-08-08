@@ -29,6 +29,11 @@ export async function renderHtmlToPdf(html: string): Promise<Buffer> {
   try {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle" });
+    // Embedded @font-face fonts (base64 data URIs) still load/parse
+    // asynchronously — wait for them so the PDF never captures a frame with
+    // the fallback system font still applied (which would reflow text and
+    // shift page breaks versus the intended layout).
+    await page.evaluate(() => document.fonts.ready);
     const pdf = await page.pdf({
       format: "Letter",
       printBackground: true,

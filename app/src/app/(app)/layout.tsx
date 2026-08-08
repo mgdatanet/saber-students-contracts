@@ -30,11 +30,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                   <Link href="/signers" className="text-slate-600 hover:text-slate-900">
                     Signers
                   </Link>
-                  <Link href="/contract-text" className="text-slate-600 hover:text-slate-900">
-                    Contract Text
-                  </Link>
-                  <Link href="/contract-theme" className="text-slate-600 hover:text-slate-900">
-                    Contract Appearance
+                  <Link href="/contract-editor" className="text-slate-600 hover:text-slate-900">
+                    Contract Editor
                   </Link>
                   <Link href="/users" className="text-slate-600 hover:text-slate-900">
                     Users

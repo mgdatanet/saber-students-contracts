@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { computeContract, formatCurrency } from "@/lib/calc";
 import { PrintButton } from "./PrintButton";
+import { ResultsTable, type ReportRow } from "./ResultsTable";
 
 export default async function ReportsPage({
   searchParams,
@@ -37,7 +38,7 @@ export default async function ReportsPage({
 
   const { data: students } = await query;
 
-  const rows = (students ?? []).map((s) => {
+  const rows: ReportRow[] = (students ?? []).map((s) => {
     const aid = (s.student_semester_aid ?? []).map((a) => ({
       n: a.semester_n,
       credits: a.credits,
@@ -49,7 +50,19 @@ export default async function ReportsPage({
       efc: a.efc,
     }));
     const totals = computeContract(aid, s.classes?.tuition_per_credit ?? 0);
-    return { student: s, totals, contractNumber: s.contracts?.[0]?.contract_number ?? null };
+    return {
+      id: s.id,
+      classId: s.class_id,
+      firstName: s.first_name,
+      lastName: s.last_name,
+      ssn: s.ssn,
+      classCode: s.classes?.code ?? null,
+      programCode: s.classes?.programs?.code ?? null,
+      creditsTotal: totals.creditsTotal,
+      totalCostFormatted: formatCurrency(totals.costeTotal),
+      totalAidFormatted: formatCurrency(totals.ayudaTotal),
+      contractNumber: s.contracts?.[0]?.contract_number ?? null,
+    };
   });
 
   return (
@@ -58,7 +71,8 @@ export default async function ReportsPage({
         <div>
           <h1 className="text-lg font-semibold text-slate-900">Reports</h1>
           <p className="text-sm text-slate-500">
-            Search students by name, SSN, class, or program. Click a row to open and edit that student.
+            Search students by name, SSN, class, or program. Click a name to open and edit that student, or check
+            the box next to already-issued contracts to print several at once.
           </p>
         </div>
         <PrintButton />
@@ -111,52 +125,7 @@ export default async function ReportsPage({
 
       <div className="hidden print:block text-lg font-semibold">SABER College — Student Report</div>
 
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-500 text-left print:bg-white">
-            <tr>
-              <th className="px-4 py-2">Student</th>
-              <th className="px-4 py-2">SSN</th>
-              <th className="px-4 py-2">Class</th>
-              <th className="px-4 py-2">Program</th>
-              <th className="px-4 py-2">Credits</th>
-              <th className="px-4 py-2">Total Cost</th>
-              <th className="px-4 py-2">Total Aid</th>
-              <th className="px-4 py-2">Contract</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(({ student: s, totals, contractNumber }) => (
-              <tr key={s.id} className="border-t border-slate-100 hover:bg-slate-50">
-                <td className="px-4 py-2">
-                  <Link
-                    href={`/classes/${s.class_id}/students/${s.id}`}
-                    className="font-medium text-slate-900 hover:underline print:no-underline print:text-black"
-                  >
-                    {s.first_name} {s.last_name}
-                  </Link>
-                </td>
-                <td className="px-4 py-2">{s.ssn}</td>
-                <td className="px-4 py-2">{s.classes?.code}</td>
-                <td className="px-4 py-2">{s.classes?.programs?.code}</td>
-                <td className="px-4 py-2">{totals.creditsTotal}</td>
-                <td className="px-4 py-2">{formatCurrency(totals.costeTotal)}</td>
-                <td className="px-4 py-2">{formatCurrency(totals.ayudaTotal)}</td>
-                <td className="px-4 py-2">
-                  {contractNumber ?? <span className="text-slate-400">—</span>}
-                </td>
-              </tr>
-            ))}
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
-                  No students match this search.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <ResultsTable rows={rows} />
 
       <p className="text-xs text-slate-400 print:hidden">
         Looking for older cohorts? Check{" "}

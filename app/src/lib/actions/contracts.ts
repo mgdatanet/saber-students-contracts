@@ -7,7 +7,7 @@ import { computeContract, validateStudent, type SemesterAidInput } from "@/lib/c
 import { renderContractHtml } from "@/lib/pdf/contractHtml";
 import { renderHtmlToPdf } from "@/lib/pdf/renderPdf";
 import { fetchContractTextBlocks } from "@/lib/contractText";
-import { fetchContractTheme } from "@/lib/contractTheme";
+import { fetchContractTheme } from "@/lib/contractThemeServer";
 
 export interface IssueResult {
   success: boolean;

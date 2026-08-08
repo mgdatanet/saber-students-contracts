@@ -11,6 +11,7 @@ import {
 import { applyTokens, type ContractTextBlocks } from "@/lib/contractText";
 import { DEFAULT_CONTRACT_THEME, type ContractTheme } from "@/lib/contractTheme";
 import { LOGO_BASE64_PNG } from "./logoBase64";
+import { ARIMO_BOLD_WOFF2, ARIMO_REGULAR_WOFF2 } from "./fontBase64";
 
 // Fallback copy used only if a block is somehow missing from the database
 // (e.g. right after a fresh install before the seed migration runs). The
@@ -165,15 +166,39 @@ export function renderContractHtml(input: ContractHtmlInput): string {
     })
     .filter((r) => r.s);
 
+  // When the theme is left on the default Arial stack, put the embedded
+  // Arimo (metric-compatible with Arial) first. This is the fix for pages
+  // rendering "misaligned" only in production: serverless Chromium
+  // (@sparticuz/chromium on Vercel, Linux) has no Arial installed, so it was
+  // silently substituting a font with different character widths, reflowing
+  // text and shifting page breaks versus what renders locally on Windows.
+  // Embedding the font removes the dependency on whatever fonts the host
+  // happens to have. Custom font choices (Georgia, Verdana, etc.) are left
+  // as-is — those are a deliberate admin choice, not the default path.
+  const isDefaultFont = theme.fontFamily === DEFAULT_CONTRACT_THEME.fontFamily;
+  const bodyFontFamily = isDefaultFont ? `'Arimo', ${theme.fontFamily}` : theme.fontFamily;
+
   return `
 <!doctype html>
 <html>
 <head>
 <meta charset="utf-8" />
 <style>
+  @font-face {
+    font-family: 'Arimo';
+    font-style: normal;
+    font-weight: 400;
+    src: url(${ARIMO_REGULAR_WOFF2}) format('woff2');
+  }
+  @font-face {
+    font-family: 'Arimo';
+    font-style: normal;
+    font-weight: 700;
+    src: url(${ARIMO_BOLD_WOFF2}) format('woff2');
+  }
   @page { size: letter; margin: 0.4in; }
   * { box-sizing: border-box; }
-  body { font-family: ${theme.fontFamily}; font-size: ${theme.baseFontSizePt}pt; color: #111; margin: 0; }
+  body { font-family: ${bodyFontFamily}; font-size: ${theme.baseFontSizePt}pt; color: #111; margin: 0; }
   .page { page-break-after: always; }
   .page:last-child { page-break-after: auto; }
   table { width: 100%; border-collapse: collapse; }
