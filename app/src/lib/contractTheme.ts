@@ -16,7 +16,7 @@ export const DEFAULT_CONTRACT_THEME: ContractTheme = {
   borderColor: "#000000",
   fontFamily: "Arial, Helvetica, sans-serif",
   baseFontSizePt: 9.5,
-  logoMaxHeightPx: 70,
+  logoMaxHeightPx: 100,
 };
 
 export const FONT_FAMILY_OPTIONS = [

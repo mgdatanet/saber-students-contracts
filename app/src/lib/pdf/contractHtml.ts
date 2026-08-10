@@ -216,10 +216,12 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   .no-border td, .no-border th { border: none; }
   h1 { font-size: 13pt; margin: 0 0 4px; }
   h2 { font-size: 10pt; background: #ddd; padding: 3px 6px; margin: 10px 0 0; }
-  .header { display: flex; border: 1px solid ${theme.borderColor}; align-items: center; }
+  .header { display: flex; border: 1px solid ${theme.borderColor}; align-items: stretch; }
   .header .logo { width: 30%; padding: 8px; display: flex; align-items: center; justify-content: center; }
   .header .logo img { max-width: 100%; max-height: ${theme.logoMaxHeightPx}px; object-fit: contain; }
-  .header .titlebox { width: 70%; text-align: center; padding: 10px; }
+  .header .titlebox { width: 70%; text-align: center; display: flex; flex-direction: column; }
+  .header .titlebox .address-block { padding: 10px 10px 4px; color: #000066; font-size: 1.2em; font-weight: bold; line-height: 1.4; }
+  .header .titlebox h1 { background: ${theme.primaryColor}; color: ${theme.sectionTitleTextColor}; margin: auto 0 0; padding: 6px; }
   .small { font-size: 8pt; color: #444; }
   .center { text-align: center; }
   .right { text-align: right; }
@@ -232,6 +234,7 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   .info-table { table-layout: fixed; height: 100%; }
   .info-table td { padding: 16px 12px; font-size: 1.15em; line-height: 1.5; vertical-align: middle; }
   .info-table td.top { vertical-align: top; }
+  .method-row { display: flex; justify-content: space-between; align-items: center; }
   ul, ol { margin: 4px 0; padding-left: 18px; }
   /* The original document mixes sans-serif labels/tables with serif body
      copy for the dense legal paragraphs — this class marks those blocks. */
@@ -246,9 +249,11 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   <div class="header">
     <div class="logo"><img src="${LOGO_BASE64_PNG}" alt="SABER College" /></div>
     <div class="titlebox">
-      <div>3990 W. FLAGLER STREET</div>
-      <div>Miami, Florida 33134</div>
-      <div>Telephone (305) 443-9170</div>
+      <div class="address-block">
+        <div>3990 W. FLAGLER STREET</div>
+        <div>Miami, Florida 33134</div>
+        <div>Telephone (305) 443-9170</div>
+      </div>
       <h1>Student Enrollment Agreement</h1>
     </div>
   </div>
@@ -273,7 +278,12 @@ export function renderContractHtml(input: ContractHtmlInput): string {
       <td colspan="4">Class Schedule: ${checkbox(klass.schedule === "Evening")} Evening Classes &nbsp; ${checkbox(klass.schedule === "Day")} Day Classes</td>
     </tr>
     <tr>
-      <td colspan="4" class="bold">Method of Delivery: ${esc(klass.methodOfDelivery === "Full Distance" ? "Full Distance (Online)" : klass.methodOfDelivery)}<br/>INITIALS _________</td>
+      <td colspan="4" class="bold">
+        <div class="method-row">
+          <span>Method of Delivery: ${esc(klass.methodOfDelivery === "Full Distance" ? "Full Distance (Online)" : klass.methodOfDelivery)}</span>
+          <span>INITIALS _________</span>
+        </div>
+      </td>
     </tr>
     <tr><td colspan="4" class="center">Conditions as they appear in all pages are part of this document.</td></tr>
   </table>
