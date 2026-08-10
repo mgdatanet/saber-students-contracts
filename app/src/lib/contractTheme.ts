@@ -11,9 +11,9 @@ export interface ContractTheme {
 }
 
 export const DEFAULT_CONTRACT_THEME: ContractTheme = {
-  primaryColor: "#cccccc",
-  sectionTitleTextColor: "#000000",
-  borderColor: "#333333",
+  primaryColor: "#4d4d4d",
+  sectionTitleTextColor: "#ffffff",
+  borderColor: "#000000",
   fontFamily: "Arial, Helvetica, sans-serif",
   baseFontSizePt: 9.5,
   logoMaxHeightPx: 70,

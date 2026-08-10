@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireProfile } from "@/lib/actions/profile";
 import { saveStudentIdentity } from "@/lib/actions/students";
 import { StudentAidGrid } from "./StudentAidGrid";
 import { GenerateContractButton } from "./GenerateContractButton";
 import { DownloadContractLink } from "../../DownloadContractLink";
 import { DeleteStudentButton } from "./DeleteStudentButton";
+import { AdminDeleteContractButton } from "./AdminDeleteContractButton";
+import { AdminDeleteStudentButton } from "./AdminDeleteStudentButton";
 
 export default async function StudentDetailPage({
   params,
@@ -16,6 +19,8 @@ export default async function StudentDetailPage({
 }) {
   const { id: classId, studentId } = await params;
   const { error: errorParam } = await searchParams;
+  const { profile } = await requireProfile();
+  const isAdmin = profile.role === "admin";
   const supabase = await createClient();
 
   const [{ data: cls }, { data: semesters }, { data: student }] = await Promise.all([
@@ -32,6 +37,7 @@ export default async function StudentDetailPage({
 
   const hasSixSemesterDates = (semesters?.length ?? 0) === 6 && semesters!.every((s) => s.start_date && s.end_date);
   const contract = student.contracts?.[0];
+  const editable = !contract || isAdmin;
 
   const initialSemesters = (student.student_semester_aid ?? [])
     .slice()
@@ -57,23 +63,33 @@ export default async function StudentDetailPage({
           <h1 className="text-lg font-semibold text-slate-900">
             {student.first_name} {student.last_name}
           </h1>
-          {contract ? (
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-md px-3 py-1.5">
-                Contract {contract.contract_number} issued
-              </span>
-              <DownloadContractLink pdfPath={contract.pdf_path} />
-            </div>
-          ) : (
-            <div className="flex items-center gap-4">
-              <DeleteStudentButton
+          <div className="flex items-center gap-3">
+            {contract ? (
+              <>
+                <span className="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-md px-3 py-1.5">
+                  Contract {contract.contract_number} issued
+                </span>
+                <DownloadContractLink pdfPath={contract.pdf_path} />
+                {isAdmin && <AdminDeleteContractButton contractId={contract.id} />}
+              </>
+            ) : (
+              <>
+                <DeleteStudentButton
+                  classId={classId}
+                  studentId={studentId}
+                  studentName={`${student.first_name} ${student.last_name}`}
+                />
+                <GenerateContractButton classId={classId} studentId={studentId} />
+              </>
+            )}
+            {isAdmin && (
+              <AdminDeleteStudentButton
                 classId={classId}
                 studentId={studentId}
                 studentName={`${student.first_name} ${student.last_name}`}
               />
-              <GenerateContractButton classId={classId} studentId={studentId} />
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -81,36 +97,42 @@ export default async function StudentDetailPage({
         <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{errorParam}</div>
       )}
 
+      {contract && isAdmin && (
+        <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
+          Admin override: this student already has an issued contract. Editing below does <strong>not</strong>{" "}
+          change the already-issued PDF — to correct a mistake, fix the data here, then use{" "}
+          <strong>&ldquo;Delete Contract&rdquo;</strong> above and generate a new one.
+        </div>
+      )}
+
       <div className="bg-white border border-slate-200 rounded-lg p-4">
-        <h2 className="text-sm font-medium text-slate-900">
-          {contract ? "Student Details" : "Edit Student Details"}
-        </h2>
+        <h2 className="text-sm font-medium text-slate-900">{editable ? "Edit Student Details" : "Student Details"}</h2>
         <form
           action={saveStudentIdentity.bind(null, classId, studentId)}
           className="grid grid-cols-3 gap-3 mt-3"
         >
-          <Field name="first_name" label="First name" defaultValue={student.first_name} required disabled={!!contract} />
-          <Field name="last_name" label="Last name" defaultValue={student.last_name} required disabled={!!contract} />
-          <Field name="middle_initial" label="Middle initial" defaultValue={student.middle_initial ?? ""} disabled={!!contract} />
-          <Field name="ssn" label="SS # (999-99-9999)" defaultValue={student.ssn ?? ""} disabled={!!contract} />
+          <Field name="first_name" label="First name" defaultValue={student.first_name} required disabled={!editable} />
+          <Field name="last_name" label="Last name" defaultValue={student.last_name} required disabled={!editable} />
+          <Field name="middle_initial" label="Middle initial" defaultValue={student.middle_initial ?? ""} disabled={!editable} />
+          <Field name="ssn" label="SS # (999-99-9999)" defaultValue={student.ssn ?? ""} disabled={!editable} />
           <Field
             name="date_of_birth"
             label="Date of birth"
             type="date"
             defaultValue={student.date_of_birth ?? ""}
-            disabled={!!contract}
+            disabled={!editable}
           />
-          <Field name="phone" label="Telephone" defaultValue={student.phone ?? ""} disabled={!!contract} />
-          <Field name="mobile" label="Cell phone" defaultValue={student.mobile ?? ""} disabled={!!contract} />
+          <Field name="phone" label="Telephone" defaultValue={student.phone ?? ""} disabled={!editable} />
+          <Field name="mobile" label="Cell phone" defaultValue={student.mobile ?? ""} disabled={!editable} />
           <Field
             name="contract_date"
             label="Contract date"
             type="date"
             defaultValue={student.contract_date ?? ""}
-            disabled={!!contract}
+            disabled={!editable}
           />
-          <Field name="address" label="Current address" defaultValue={student.address ?? ""} className="col-span-3" disabled={!!contract} />
-          {!contract && (
+          <Field name="address" label="Current address" defaultValue={student.address ?? ""} className="col-span-3" disabled={!editable} />
+          {editable && (
             <div className="col-span-3">
               <button
                 type="submit"
@@ -136,7 +158,7 @@ export default async function StudentDetailPage({
           ssn: student.ssn,
           dateOfBirth: student.date_of_birth,
         }}
-        locked={!!contract}
+        locked={!editable}
       />
     </div>
   );

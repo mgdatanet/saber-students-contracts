@@ -196,11 +196,15 @@ export function renderContractHtml(input: ContractHtmlInput): string {
     font-weight: 700;
     src: url(${ARIMO_BOLD_WOFF2}) format('woff2');
   }
-  @page { size: letter; margin: 0.4in; }
+  @page { size: letter; margin: 0.5in; }
   * { box-sizing: border-box; }
   body { font-family: ${bodyFontFamily}; font-size: ${theme.baseFontSizePt}pt; color: #111; margin: 0; }
   .page { page-break-after: always; }
   .page:last-child { page-break-after: auto; }
+  /* Every page's content sits inside one thin outer frame, matching the
+     original document's "printed form" look (per the visual spec supplied
+     for this contract: 1pt black border enclosing all content on each page). */
+  .page-frame { border: 1pt solid #000; padding: 10px; min-height: 10in; }
   table { width: 100%; border-collapse: collapse; }
   td, th { border: 1px solid ${theme.borderColor}; padding: 4px 6px; vertical-align: top; }
   .no-border td, .no-border th { border: none; }
@@ -214,15 +218,20 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   .center { text-align: center; }
   .right { text-align: right; }
   .bold { font-weight: bold; }
-  .section-title { background: ${theme.primaryColor}; color: ${theme.sectionTitleTextColor}; text-align: center; font-weight: bold; padding: 3px; }
+  .section-title { background: ${theme.primaryColor}; color: ${theme.sectionTitleTextColor}; text-align: center; font-weight: bold; padding: 3px; margin: 0 0 6px; }
   .footer-note { text-align: center; font-size: 8pt; margin-top: 8px; }
-  ul { margin: 4px 0; padding-left: 18px; }
+  .page-footer { text-align: center; font-size: 8pt; font-weight: bold; margin-top: 10px; }
+  ul, ol { margin: 4px 0; padding-left: 18px; }
+  /* The original document mixes sans-serif labels/tables with serif body
+     copy for the dense legal paragraphs — this class marks those blocks. */
+  .legal-text { font-family: 'Times New Roman', Times, serif; }
 </style>
 </head>
 <body>
 
 <!-- PAGE 1: Information -->
 <div class="page">
+ <div class="page-frame">
   <div class="header">
     <div class="logo"><img src="${LOGO_BASE64_PNG}" alt="SABER College" /></div>
     <div class="titlebox">
@@ -234,7 +243,7 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   </div>
   <div class="section-title">Information</div>
   <table>
-    <tr><td colspan="2">This Agreement is by and between SABER College, 3990 W. Flagler Street, Miami, Florida 33134, (The &ldquo;College&rdquo;) and (the &ldquo;Student&rdquo;) listed below:</td></tr>
+    <tr><td colspan="2" class="legal-text">This Agreement is by and between SABER College, 3990 W. Flagler Street, Miami, Florida 33134, (The &ldquo;College&rdquo;) and (the &ldquo;Student&rdquo;) listed below:</td></tr>
     <tr><td class="bold">STUDENT NAME: ${esc(fullName)}</td><td class="bold">SS #: ${esc(formatSsn(student.ssn))}</td></tr>
     <tr>
       <td>Date of Birth: ${esc(student.dateOfBirth ? formatDateOfBirth(student.dateOfBirth) : "")}</td>
@@ -252,19 +261,23 @@ export function renderContractHtml(input: ContractHtmlInput): string {
     <tr><td colspan="2" class="center">Conditions as they appear in all pages are part of this document.</td></tr>
   </table>
   <div class="footer-note">Contract # ${esc(contractNumber)}</div>
+ </div>
 </div>
 
 <!-- PAGE 2: Cancellation and Refund Policy -->
 <div class="page">
+ <div class="page-frame">
   <div class="section-title">Cancellation and Refund Policy</div>
-  <table class="no-border">
+  <table class="no-border legal-text">
     ${cancellationRefundPolicy}
   </table>
   <div class="footer-note">Conditions as they appear in all pages are part of this document.</div>
+ </div>
 </div>
 
 <!-- PAGE 3: Costs and TILA -->
 <div class="page">
+ <div class="page-frame">
   <table class="no-border">
     <tr><td class="right">INITIALS: ________________</td></tr>
   </table>
@@ -292,10 +305,10 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   </table>
 
   <div class="section-title">METHODS OF PAYMENT</div>
-  <table class="no-border">
+  <table class="no-border legal-text">
     ${blocks.methods_of_payment_note}
   </table>
-  <p class="small">${blocks.methods_of_payment_footnote}</p>
+  <p class="small legal-text">${blocks.methods_of_payment_footnote}</p>
 
   <table>
     <tr>
@@ -333,20 +346,22 @@ export function renderContractHtml(input: ContractHtmlInput): string {
       .join("")}
   </table>
 
-  <p class="small">All prices for the program are printed herein. Contracts will not be sold to a third party at any time. In cases when no payment plan is established, there will be no carrying charges, interest charges, or service charges connected or charged with the program.</p>
+  <p class="small legal-text">All prices for the program are printed herein. Contracts will not be sold to a third party at any time. In cases when no payment plan is established, there will be no carrying charges, interest charges, or service charges connected or charged with the program.</p>
   <p>NAME: ${esc(fullName)} &nbsp;&nbsp;&nbsp;&nbsp; INITIALS: ________________</p>
 
   <div class="section-title">Termination Policy</div>
-  ${blocks.termination_policy}
+  <div class="legal-text">${blocks.termination_policy}</div>
   <div class="footer-note">Conditions as they appear in all pages are part of this document.</div>
+ </div>
 </div>
 
 <!-- PAGE 4: Signatures -->
 <div class="page">
-  <p>This document and the Catalog are a binding contract between the institution and applicant and no further modification or representation except as herein expressed by both parties will be recognized.</p>
+ <div class="page-frame">
+  <p class="legal-text">This document and the Catalog are a binding contract between the institution and applicant and no further modification or representation except as herein expressed by both parties will be recognized.</p>
 
   <div class="section-title">GRADUATION REQUIREMENTS</div>
-  <p>${graduationRequirements}</p>
+  <p class="legal-text">${graduationRequirements}</p>
 
   <p>${blocks.employment_assistance}</p>
 
@@ -371,7 +386,7 @@ export function renderContractHtml(input: ContractHtmlInput): string {
     <tr><td>Program Completion Time:</td><td>Months ${klass.monthsTotal} &nbsp;&nbsp; Weeks ${klass.weeksTotal}</td></tr>
   </table>
 
-  ${blocks.notice_and_agreement}
+  <div class="legal-text">${blocks.notice_and_agreement}</div>
 
   <p>Upon satisfactory completion of the program the student will be awarded a:<br/>
   ASSOCIATE DEGREE ${checkbox(program.degreeType === "associate")} &nbsp;&nbsp;&nbsp;&nbsp; DIPLOMA ${checkbox(program.degreeType === "diploma")}</p>
@@ -382,6 +397,8 @@ export function renderContractHtml(input: ContractHtmlInput): string {
     <tr><td>Accepted by: ${esc(signerName)}</td><td>Date: ${esc(student.contractDate ? formatPaymentDate(student.contractDate) : "")}</td></tr>
     <tr><td>School Official / Title</td><td></td></tr>
   </table>
+  <div class="page-footer">Conditions as they appear in all pages are part of this document.</div>
+ </div>
 </div>
 
 </body>

@@ -3,6 +3,24 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireProfile } from "@/lib/actions/profile";
+
+/** Once a contract is issued, only an admin may still edit that student's data (to fix a mistake). */
+async function assertCanEditLockedStudent(studentId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { profile } = await requireProfile();
+  if (profile.role === "admin") return null;
+
+  const { count } = await supabase
+    .from("contracts")
+    .select("id", { count: "exact", head: true })
+    .eq("student_id", studentId);
+
+  if (count && count > 0) {
+    return "This student already has an issued contract. Only an admin can edit their data now.";
+  }
+  return null;
+}
 
 export interface SemesterAidForm {
   n: number;
@@ -16,6 +34,11 @@ export interface SemesterAidForm {
 }
 
 export async function saveStudentIdentity(classId: string, studentId: string, formData: FormData): Promise<void> {
+  const lockError = await assertCanEditLockedStudent(studentId);
+  if (lockError) {
+    redirect(`/classes/${classId}/students/${studentId}?error=${encodeURIComponent(lockError)}`);
+  }
+
   const supabase = await createClient();
 
   const first_name = String(formData.get("first_name") ?? "").trim();
@@ -53,6 +76,9 @@ export async function saveStudentAid(
   studentId: string,
   semesters: SemesterAidForm[]
 ): Promise<{ error?: string }> {
+  const lockError = await assertCanEditLockedStudent(studentId);
+  if (lockError) return { error: lockError };
+
   const supabase = await createClient();
 
   for (const s of semesters) {
