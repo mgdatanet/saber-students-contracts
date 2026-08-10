@@ -212,21 +212,22 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   .page-frame-fill .info-table { flex: 1 1 auto; }
   .page-frame-fill .footer-note { margin-top: auto; }
   table { width: 100%; border-collapse: collapse; }
-  td, th { border: 1px solid ${theme.borderColor}; padding: 4px 6px; vertical-align: top; }
+  td, th { border: 1px solid ${theme.borderColor}; padding: 3px 6px; vertical-align: top; }
   .no-border td, .no-border th { border: none; }
   h1 { font-size: 13pt; margin: 0 0 4px; }
   h2 { font-size: 10pt; background: #ddd; padding: 3px 6px; margin: 10px 0 0; }
+  p { margin: 4px 0; }
   .header { display: flex; border: 1px solid ${theme.borderColor}; align-items: stretch; }
   .header .logo { width: 30%; padding: 8px; display: flex; align-items: center; justify-content: center; }
   .header .logo img { max-width: 100%; max-height: ${theme.logoMaxHeightPx}px; object-fit: contain; }
   .header .titlebox { width: 70%; text-align: center; display: flex; flex-direction: column; }
   .header .titlebox .address-block { padding: 10px 10px 4px; color: #000066; font-size: 1.2em; font-weight: bold; line-height: 1.4; }
-  .header .titlebox h1 { background: ${theme.primaryColor}; color: ${theme.sectionTitleTextColor}; margin: auto 0 0; padding: 6px; }
+  .header .titlebox h1 { color: #000; margin: auto 0 0; padding: 6px; }
   .small { font-size: 8pt; color: #444; }
   .center { text-align: center; }
   .right { text-align: right; }
   .bold { font-weight: bold; }
-  .section-title { background: ${theme.primaryColor}; color: ${theme.sectionTitleTextColor}; text-align: center; font-weight: bold; padding: 3px; margin: 0 0 6px; }
+  .section-title { background: ${theme.primaryColor}; color: ${theme.sectionTitleTextColor}; text-align: center; font-weight: bold; padding: 2px; margin: 4px 0; }
   .footer-note { text-align: center; font-size: 8pt; margin-top: 8px; }
   .page-footer { text-align: center; font-size: 8pt; font-weight: bold; margin-top: 10px; }
   /* Page 1 "Information" grid: roomier cells so the form visibly fills the
@@ -306,7 +307,7 @@ export function renderContractHtml(input: ContractHtmlInput): string {
 <div class="page">
  <div class="page-frame">
   <table class="no-border">
-    <tr><td class="right">INITIALS: ________________</td></tr>
+    <tr><td class="right"><span class="bold">INITIALS:</span> ________________</td></tr>
   </table>
   <table>
     <tr>
@@ -362,11 +363,11 @@ export function renderContractHtml(input: ContractHtmlInput): string {
 
   <p class="bold">Your Payment Schedule will be:</p>
   <table>
-    <tr><th>Number of Payments</th><th>Amount of Each Payment</th><th>When Payments are Due</th></tr>
+    <tr><th>Semester</th><th>Number of Payments</th><th>Amount of Each Payment</th><th>When Payments are Due</th></tr>
     ${semesterRows
       .map(
         (r) =>
-          `<tr><td class="center">${r.s.numPagos}</td><td class="center">${formatCurrency(
+          `<tr><td class="center bold">${r.ordinal}</td><td class="center">${r.s.numPagos}</td><td class="center">${formatCurrency(
             r.s.importePago
           )}</td><td class="center">${r.dueDate}</td></tr>`
       )
@@ -374,7 +375,7 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   </table>
 
   <p class="small legal-text">All prices for the program are printed herein. Contracts will not be sold to a third party at any time. In cases when no payment plan is established, there will be no carrying charges, interest charges, or service charges connected or charged with the program.</p>
-  <p>NAME: ${esc(fullName)} &nbsp;&nbsp;&nbsp;&nbsp; INITIALS: ________________</p>
+  <p><span class="bold">NAME:</span> ${esc(fullName)} &nbsp;&nbsp;&nbsp;&nbsp; <span class="bold">INITIALS:</span> ________________</p>
 
   <div class="section-title">Termination Policy</div>
   <div class="legal-text">${blocks.termination_policy}</div>
