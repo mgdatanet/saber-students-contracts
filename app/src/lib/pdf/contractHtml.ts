@@ -205,6 +205,12 @@ export function renderContractHtml(input: ContractHtmlInput): string {
      original document's "printed form" look (per the visual spec supplied
      for this contract: 1pt black border enclosing all content on each page). */
   .page-frame { border: 1pt solid #000; padding: 10px; min-height: 10in; }
+  /* Page 1 only: stretch the Information table to occupy the leftover
+     vertical space instead of clumping at the top of the page (client
+     feedback: the form read as "compressed"). */
+  .page-frame-fill { display: flex; flex-direction: column; height: 10in; }
+  .page-frame-fill .info-table { flex: 1 1 auto; }
+  .page-frame-fill .footer-note { margin-top: auto; }
   table { width: 100%; border-collapse: collapse; }
   td, th { border: 1px solid ${theme.borderColor}; padding: 4px 6px; vertical-align: top; }
   .no-border td, .no-border th { border: none; }
@@ -221,6 +227,11 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   .section-title { background: ${theme.primaryColor}; color: ${theme.sectionTitleTextColor}; text-align: center; font-weight: bold; padding: 3px; margin: 0 0 6px; }
   .footer-note { text-align: center; font-size: 8pt; margin-top: 8px; }
   .page-footer { text-align: center; font-size: 8pt; font-weight: bold; margin-top: 10px; }
+  /* Page 1 "Information" grid: roomier cells so the form visibly fills the
+     page instead of clumping at the top (client feedback: felt "compressed"). */
+  .info-table { table-layout: fixed; height: 100%; }
+  .info-table td { padding: 16px 12px; font-size: 1.15em; line-height: 1.5; vertical-align: middle; }
+  .info-table td.top { vertical-align: top; }
   ul, ol { margin: 4px 0; padding-left: 18px; }
   /* The original document mixes sans-serif labels/tables with serif body
      copy for the dense legal paragraphs — this class marks those blocks. */
@@ -231,7 +242,7 @@ export function renderContractHtml(input: ContractHtmlInput): string {
 
 <!-- PAGE 1: Information -->
 <div class="page">
- <div class="page-frame">
+ <div class="page-frame page-frame-fill">
   <div class="header">
     <div class="logo"><img src="${LOGO_BASE64_PNG}" alt="SABER College" /></div>
     <div class="titlebox">
@@ -242,23 +253,29 @@ export function renderContractHtml(input: ContractHtmlInput): string {
     </div>
   </div>
   <div class="section-title">Information</div>
-  <table>
-    <tr><td colspan="2" class="legal-text">This Agreement is by and between SABER College, 3990 W. Flagler Street, Miami, Florida 33134, (The &ldquo;College&rdquo;) and (the &ldquo;Student&rdquo;) listed below:</td></tr>
-    <tr><td class="bold">STUDENT NAME: ${esc(fullName)}</td><td class="bold">SS #: ${esc(formatSsn(student.ssn))}</td></tr>
+  <table class="info-table">
+    <tr><td colspan="4" class="legal-text top">This Agreement is by and between SABER College, 3990 W. Flagler Street, Miami, Florida 33134, (The &ldquo;College&rdquo;) and (the &ldquo;Student&rdquo;) listed below:</td></tr>
+    <tr><td colspan="2" class="bold">STUDENT NAME: ${esc(fullName)}</td><td colspan="2" class="bold">SS #: ${esc(formatSsn(student.ssn))}</td></tr>
     <tr>
-      <td>Date of Birth: ${esc(student.dateOfBirth ? formatDateOfBirth(student.dateOfBirth) : "")}</td>
-      <td>Telephone: ${esc(formatPhone(student.phone))} &nbsp;&nbsp; Cell phone: ${esc(formatPhone(student.mobile))}</td>
+      <td colspan="2">Date of Birth: ${esc(student.dateOfBirth ? formatDateOfBirth(student.dateOfBirth) : "")}</td>
+      <td>Telephone: ${esc(formatPhone(student.phone))}</td>
+      <td>Cell phone: ${esc(formatPhone(student.mobile))}</td>
     </tr>
-    <tr><td colspan="2">Current Address: ${esc(student.address)}</td></tr>
+    <tr><td colspan="4">Current Address: ${esc(student.address)}</td></tr>
     <tr>
-      <td>Program Title: ${esc(program.name)}<br/>Credential Awarded upon completion:<br/>${esc(program.credentialName)}</td>
-      <td>Total Semester Credit Hours: ${klass.creditsTotal}<br/>Total Weeks: ${klass.weeksTotal}</td>
+      <td colspan="2">Program Title: ${esc(program.name)}</td>
+      <td colspan="2" rowspan="2">Total Semester Credit Hours: ${klass.creditsTotal}<br/>Total Weeks: ${klass.weeksTotal}</td>
     </tr>
     <tr>
-      <td>Class Schedule: ${checkbox(klass.schedule === "Evening")} Evening Classes &nbsp; ${checkbox(klass.schedule === "Day")} Day Classes</td>
-      <td class="bold">Method of Delivery: ${esc(klass.methodOfDelivery === "Full Distance" ? "Full Distance (Online)" : klass.methodOfDelivery)}<br/>INITIALS _________</td>
+      <td colspan="2">Credential Awarded upon completion: ${esc(program.credentialName)}</td>
     </tr>
-    <tr><td colspan="2" class="center">Conditions as they appear in all pages are part of this document.</td></tr>
+    <tr>
+      <td colspan="4">Class Schedule: ${checkbox(klass.schedule === "Evening")} Evening Classes &nbsp; ${checkbox(klass.schedule === "Day")} Day Classes</td>
+    </tr>
+    <tr>
+      <td colspan="4" class="bold">Method of Delivery: ${esc(klass.methodOfDelivery === "Full Distance" ? "Full Distance (Online)" : klass.methodOfDelivery)}<br/>INITIALS _________</td>
+    </tr>
+    <tr><td colspan="4" class="center">Conditions as they appear in all pages are part of this document.</td></tr>
   </table>
   <div class="footer-note">Contract # ${esc(contractNumber)}</div>
  </div>
