@@ -65,11 +65,26 @@ export default async function ReportsPage({
     };
   });
 
+  const issuedCount = rows.filter((r) => r.contractNumber).length;
+  const totalAidCents = students?.reduce((sum, s) => {
+    const aid = (s.student_semester_aid ?? []).map((a) => ({
+      n: a.semester_n,
+      credits: a.credits,
+      fees: a.fees,
+      pell: a.pell,
+      sub: a.sub,
+      unsub: a.unsub,
+      plus: a.plus,
+      efc: a.efc,
+    }));
+    return sum + computeContract(aid, s.classes?.tuition_per_credit ?? 0).ayudaTotal;
+  }, 0) ?? 0;
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between print:hidden">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4 print:hidden">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">Reports</h1>
+          <h1 className="text-2xl font-semibold text-brand-navy">Reports</h1>
           <p className="text-sm text-slate-500">
             Search students by name, SSN, class, or program. Click a name to open and edit that student, or check
             the box next to already-issued contracts to print several at once.
@@ -78,19 +93,29 @@ export default async function ReportsPage({
         <PrintButton />
       </div>
 
-      <form className="flex flex-wrap gap-3 items-end print:hidden">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 print:hidden">
+        <StatCard label="Students Found" value={rows.length} />
+        <StatCard label="Contracts Issued" value={issuedCount} accent="text-brand-gold" />
+        <StatCard label="Total Aid Awarded" value={formatCurrency(totalAidCents)} accent="text-emerald-600" />
+      </div>
+
+      <form className="flex flex-wrap gap-3 items-end print:hidden bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
         <div>
           <label className="block text-sm text-slate-600 mb-1">Search (name or SSN)</label>
           <input
             name="q"
             defaultValue={q}
             placeholder="e.g. Ana or 307-83-0409"
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm w-64"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
           />
         </div>
         <div>
           <label className="block text-sm text-slate-600 mb-1">Program</label>
-          <select name="programId" defaultValue={programId ?? ""} className="rounded-md border border-slate-300 px-3 py-2 text-sm">
+          <select
+            name="programId"
+            defaultValue={programId ?? ""}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
+          >
             <option value="">All programs</option>
             {programs?.map((p) => (
               <option key={p.id} value={p.id}>
@@ -101,7 +126,11 @@ export default async function ReportsPage({
         </div>
         <div>
           <label className="block text-sm text-slate-600 mb-1">Class</label>
-          <select name="classId" defaultValue={classId ?? ""} className="rounded-md border border-slate-300 px-3 py-2 text-sm">
+          <select
+            name="classId"
+            defaultValue={classId ?? ""}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
+          >
             <option value="">All classes</option>
             {classes?.map((c) => (
               <option key={c.id} value={c.id}>
@@ -112,7 +141,7 @@ export default async function ReportsPage({
         </div>
         <button
           type="submit"
-          className="rounded-md bg-slate-900 text-white text-sm font-medium px-4 py-2 hover:bg-slate-800"
+          className="rounded-lg bg-brand-navy text-white text-sm font-medium px-4 py-2.5 shadow-sm hover:bg-brand-blue transition-colors"
         >
           Search
         </button>
@@ -134,6 +163,15 @@ export default async function ReportsPage({
         </Link>{" "}
         for read-only historical records.
       </p>
+    </div>
+  );
+}
+
+function StatCard({ label, value, accent }: { label: string; value: number | string; accent?: string }) {
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
+      <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
+      <div className={`mt-1 text-2xl font-semibold ${accent ?? "text-brand-navy"}`}>{value}</div>
     </div>
   );
 }

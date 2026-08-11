@@ -75,75 +75,92 @@ export function ResultsTable({ rows }: { rows: ReportRow[] }) {
           type="button"
           onClick={handlePrintSelected}
           disabled={selected.size === 0 || isPending}
-          className="rounded-md bg-emerald-600 text-white text-sm font-medium px-4 py-2 hover:bg-emerald-500 disabled:opacity-50"
+          className="rounded-lg bg-emerald-600 text-white text-sm font-medium px-4 py-2.5 shadow-sm hover:bg-emerald-500 disabled:opacity-50 transition-colors"
         >
           {isPending ? "Preparing…" : `Print Selected Contracts (${selected.size})`}
         </button>
       </div>
       {error && (
-        <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700 print:hidden">{error}</div>
+        <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700 print:hidden">{error}</div>
       )}
       {skippedNames.length > 0 && (
-        <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800 print:hidden">
+        <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800 print:hidden">
           Skipped (no issued contract yet): {skippedNames.join(", ")}
         </div>
       )}
 
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-500 text-left print:bg-white">
-            <tr>
-              <th className="px-4 py-2 print:hidden">
-                <input type="checkbox" checked={allSelectableChecked} onChange={toggleAll} aria-label="Select all with contracts" />
-              </th>
-              <th className="px-4 py-2">Student</th>
-              <th className="px-4 py-2">SSN</th>
-              <th className="px-4 py-2">Class</th>
-              <th className="px-4 py-2">Program</th>
-              <th className="px-4 py-2">Credits</th>
-              <th className="px-4 py-2">Total Cost</th>
-              <th className="px-4 py-2">Total Aid</th>
-              <th className="px-4 py-2">Contract</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.id} className="border-t border-slate-100 hover:bg-slate-50">
-                <td className="px-4 py-2 print:hidden">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-slate-500 text-left uppercase text-xs tracking-wide print:bg-white">
+              <tr>
+                <th className="px-5 py-3 print:hidden">
                   <input
                     type="checkbox"
-                    checked={selected.has(r.id)}
-                    disabled={!r.contractNumber}
-                    onChange={() => toggle(r.id)}
-                    aria-label={`Select ${r.firstName} ${r.lastName}`}
+                    checked={allSelectableChecked}
+                    onChange={toggleAll}
+                    aria-label="Select all with contracts"
+                    className="accent-brand-navy"
                   />
-                </td>
-                <td className="px-4 py-2">
-                  <Link
-                    href={`/classes/${r.classId}/students/${r.id}`}
-                    className="font-medium text-slate-900 hover:underline print:no-underline print:text-black"
-                  >
-                    {r.firstName} {r.lastName}
-                  </Link>
-                </td>
-                <td className="px-4 py-2">{r.ssn}</td>
-                <td className="px-4 py-2">{r.classCode}</td>
-                <td className="px-4 py-2">{r.programCode}</td>
-                <td className="px-4 py-2">{r.creditsTotal}</td>
-                <td className="px-4 py-2">{r.totalCostFormatted}</td>
-                <td className="px-4 py-2">{r.totalAidFormatted}</td>
-                <td className="px-4 py-2">{r.contractNumber ?? <span className="text-slate-400">—</span>}</td>
+                </th>
+                <th className="px-5 py-3">Student</th>
+                <th className="px-5 py-3">SSN</th>
+                <th className="px-5 py-3">Class</th>
+                <th className="px-5 py-3">Program</th>
+                <th className="px-5 py-3">Credits</th>
+                <th className="px-5 py-3">Total Cost</th>
+                <th className="px-5 py-3">Total Aid</th>
+                <th className="px-5 py-3">Contract</th>
               </tr>
-            ))}
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-slate-400">
-                  No students match this search.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id} className="border-t border-slate-100 hover:bg-brand-navy/5 transition-colors">
+                  <td className="px-5 py-3 print:hidden">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(r.id)}
+                      disabled={!r.contractNumber}
+                      onChange={() => toggle(r.id)}
+                      aria-label={`Select ${r.firstName} ${r.lastName}`}
+                      className="accent-brand-navy"
+                    />
+                  </td>
+                  <td className="px-5 py-3">
+                    <Link
+                      href={`/classes/${r.classId}/students/${r.id}`}
+                      className="font-medium text-brand-navy hover:underline print:no-underline print:text-black"
+                    >
+                      {r.firstName} {r.lastName}
+                    </Link>
+                  </td>
+                  <td className="px-5 py-3">{r.ssn}</td>
+                  <td className="px-5 py-3">{r.classCode}</td>
+                  <td className="px-5 py-3">{r.programCode}</td>
+                  <td className="px-5 py-3">{r.creditsTotal}</td>
+                  <td className="px-5 py-3">{r.totalCostFormatted}</td>
+                  <td className="px-5 py-3">{r.totalAidFormatted}</td>
+                  <td className="px-5 py-3">
+                    {r.contractNumber ? (
+                      <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-brand-gold/15 text-amber-700 whitespace-nowrap print:bg-transparent print:p-0 print:text-black">
+                        {r.contractNumber}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="px-5 py-8 text-center text-slate-400">
+                    No students match this search.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
