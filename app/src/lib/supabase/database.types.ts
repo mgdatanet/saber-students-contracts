@@ -417,18 +417,21 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approved: boolean
           created_at: string
           full_name: string
           id: string
           role: Database["public"]["Enums"]["user_role"]
         }
         Insert: {
+          approved?: boolean
           created_at?: string
           full_name: string
           id: string
           role?: Database["public"]["Enums"]["user_role"]
         }
         Update: {
+          approved?: boolean
           created_at?: string
           full_name?: string
           id?: string

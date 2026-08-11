@@ -12,6 +12,7 @@ export async function requireProfile() {
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
 
   if (!profile) redirect("/login");
+  if (!profile.approved) redirect("/pending-approval");
 
   return { user, profile };
 }

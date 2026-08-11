@@ -3,6 +3,7 @@ import { requireProfile } from "@/lib/actions/profile";
 import { listUsers, createUser } from "@/lib/actions/users";
 import { UserRoleSelect } from "./UserRoleSelect";
 import { DeleteUserButton } from "./DeleteUserButton";
+import { ApproveUserButton } from "./ApproveUserButton";
 
 export default async function UsersPage({
   searchParams,
@@ -22,14 +23,19 @@ export default async function UsersPage({
     loadError = e instanceof Error ? e.message : "Could not load users";
   }
 
-  const adminCount = users.filter((u) => u.role === "admin").length;
-  const staffCount = users.length - adminCount;
+  const approvedUsers = users.filter((u) => u.approved);
+  const pendingUsers = users.filter((u) => !u.approved);
+  const adminCount = approvedUsers.filter((u) => u.role === "admin").length;
+  const staffCount = approvedUsers.length - adminCount;
 
   return (
     <div className="max-w-3xl space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-brand-navy">Users</h1>
-        <p className="text-sm text-slate-500">Everyone with access to this app, and their role.</p>
+        <p className="text-sm text-slate-500">
+          Everyone with access to this app, and their role. Self-signup is limited to @sabercollege.edu addresses
+          and still needs your approval below before the account can sign in.
+        </p>
       </div>
 
       {(error || loadError) && (
@@ -40,10 +46,46 @@ export default async function UsersPage({
 
       {!loadError && (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <StatCard label="Admins" value={adminCount} accent="text-brand-gold" />
             <StatCard label="Staff" value={staffCount} />
+            <StatCard label="Pending Approval" value={pendingUsers.length} accent="text-red-600" />
           </div>
+
+          {pendingUsers.length > 0 && (
+            <div className="bg-white border border-amber-200 rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-amber-50 px-5 py-3 border-b border-amber-200">
+                <h2 className="text-sm font-semibold text-amber-800">Pending Approval</h2>
+                <p className="text-xs text-amber-700">
+                  These accounts self-registered with a @sabercollege.edu email and confirmed it, but cannot sign
+                  in until you approve them.
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 text-slate-500 text-left uppercase text-xs tracking-wide">
+                    <tr>
+                      <th className="px-5 py-3">Name</th>
+                      <th className="px-5 py-3">Email</th>
+                      <th className="px-5 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingUsers.map((u) => (
+                      <tr key={u.id} className="border-t border-slate-100 hover:bg-brand-navy/5 transition-colors">
+                        <td className="px-5 py-3 font-medium text-brand-navy">{u.fullName}</td>
+                        <td className="px-5 py-3">{u.email}</td>
+                        <td className="px-5 py-3 text-right space-x-3 whitespace-nowrap">
+                          <ApproveUserButton userId={u.id} />
+                          <DeleteUserButton userId={u.id} email={u.email} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
@@ -57,7 +99,7 @@ export default async function UsersPage({
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((u) => (
+                  {approvedUsers.map((u) => (
                     <tr key={u.id} className="border-t border-slate-100 hover:bg-brand-navy/5 transition-colors">
                       <td className="px-5 py-3 font-medium text-brand-navy">{u.fullName}</td>
                       <td className="px-5 py-3">{u.email}</td>

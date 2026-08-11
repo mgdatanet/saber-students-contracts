@@ -10,6 +10,7 @@ export interface UserRow {
   email: string;
   fullName: string;
   role: "admin" | "staff";
+  approved: boolean;
   createdAt: string;
 }
 
@@ -25,7 +26,7 @@ export async function listUsers(): Promise<UserRow[]> {
 
   const [{ data: authUsers }, { data: profiles }] = await Promise.all([
     admin.auth.admin.listUsers(),
-    admin.from("profiles").select("id, full_name, role, created_at"),
+    admin.from("profiles").select("id, full_name, role, approved, created_at"),
   ]);
 
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
@@ -38,6 +39,7 @@ export async function listUsers(): Promise<UserRow[]> {
         email: u.email ?? "",
         fullName: profile?.full_name ?? (u.user_metadata?.full_name as string) ?? "",
         role: (profile?.role ?? "staff") as "admin" | "staff",
+        approved: profile?.approved ?? true,
         createdAt: profile?.created_at ?? u.created_at,
       };
     })
@@ -67,12 +69,22 @@ export async function createUser(formData: FormData): Promise<void> {
     redirect(`/users?error=${encodeURIComponent(error?.message ?? "Could not create user")}`);
   }
 
-  // The handle_new_user trigger creates the profile row as 'staff'; promote if needed.
-  if (role === "admin") {
-    await admin.from("profiles").update({ role: "admin" }).eq("id", data.user.id);
-  }
+  // The handle_new_user trigger creates the profile row as 'staff' and
+  // approved:false (the default for public self-signups). Admin-created
+  // accounts are trusted immediately, so flip both here.
+  await admin.from("profiles").update({ role, approved: true }).eq("id", data.user.id);
 
   revalidatePath("/users");
+}
+
+export async function approveUser(userId: string): Promise<{ error?: string }> {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin.from("profiles").update({ approved: true }).eq("id", userId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/users");
+  return {};
 }
 
 export async function updateUserRole(userId: string, role: "admin" | "staff"): Promise<{ error?: string }> {

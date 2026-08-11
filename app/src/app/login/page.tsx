@@ -12,8 +12,8 @@ export default async function LoginPage({
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-brand-navy to-brand-blue px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
-          <div className="inline-flex bg-white rounded-2xl shadow-lg p-4">
-            <Image src="/logo.png" alt="SABER College" width={64} height={64} className="h-16 w-auto" priority />
+          <div className="inline-flex bg-white rounded-2xl shadow-lg p-6">
+            <Image src="/logo.png" alt="SABER College" width={220} height={220} className="h-28 w-auto" priority />
           </div>
           <p className="mt-4 text-sm text-white/80">Student Enrollment Agreements</p>
         </div>
@@ -75,6 +75,7 @@ export default async function LoginPage({
                 name="email"
                 type="email"
                 required
+                placeholder="you@sabercollege.edu"
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
               />
             </div>
@@ -95,7 +96,8 @@ export default async function LoginPage({
               Sign up
             </button>
             <p className="text-xs text-slate-400">
-              New accounts start as staff. Ask an admin to grant admin access if you need to manage programs.
+              Only @sabercollege.edu email addresses can sign up, and an admin must approve your account before you
+              can sign in.
             </p>
           </form>
         </details>

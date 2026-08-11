@@ -87,7 +87,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <aside className="hidden md:flex md:w-64 md:flex-col md:shrink-0 print:hidden bg-gradient-to-b from-brand-navy to-brand-blue text-white">
         <div className="p-5">
           <div className="rounded-xl bg-white/95 p-3 flex justify-center">
-            <Image src="/logo.png" alt="SABER College" width={140} height={140} className="h-16 w-auto" priority />
+            <Image src="/logo.png" alt="SABER College" width={200} height={200} className="h-24 w-auto" priority />
           </div>
         </div>
         <nav className="flex-1 px-3 space-y-1">
@@ -115,7 +115,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <header className="md:hidden print:hidden bg-gradient-to-r from-brand-navy to-brand-blue text-white">
         <div className="px-4 h-14 flex items-center justify-between gap-3">
           <Link href="/classes" className="flex items-center gap-2 font-semibold">
-            <Image src="/logo.png" alt="SABER College" width={28} height={28} className="h-7 w-auto bg-white rounded p-0.5" priority />
+            <Image src="/logo.png" alt="SABER College" width={40} height={40} className="h-9 w-auto bg-white rounded p-0.5" priority />
           </Link>
           <span className="text-xs text-white/80 truncate">{profile.full_name}</span>
         </div>
