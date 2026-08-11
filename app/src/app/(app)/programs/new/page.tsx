@@ -10,8 +10,8 @@ export default async function NewProgramPage({
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-lg font-semibold text-slate-900 mb-4">New Program</h1>
-      <div className="bg-white border border-slate-200 rounded-lg p-6">
+      <h1 className="text-2xl font-semibold text-brand-navy mb-4">New Program</h1>
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
         <ProgramForm action={createProgram} error={error} submitLabel="Create Program" />
       </div>
     </div>

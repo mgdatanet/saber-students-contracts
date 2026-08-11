@@ -44,7 +44,7 @@ export function ProgramForm({
   return (
     <form action={action} className="space-y-6">
       {error && (
-        <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{error}</div>
+        <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{error}</div>
       )}
 
       <section className="grid grid-cols-2 gap-4">
@@ -55,7 +55,7 @@ export function ProgramForm({
             defaultValue={dv.code ?? ""}
             required
             placeholder="e.g. RS"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
           />
         </div>
         <div>
@@ -63,7 +63,7 @@ export function ProgramForm({
           <select
             name="degree_type"
             defaultValue={dv.degree_type ?? "associate"}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
           >
             <option value="associate">Associate</option>
             <option value="diploma">Diploma</option>
@@ -76,7 +76,7 @@ export function ProgramForm({
             defaultValue={dv.name ?? ""}
             required
             placeholder="e.g. Professional Nursing"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
           />
         </div>
         <div className="col-span-2">
@@ -86,13 +86,13 @@ export function ProgramForm({
             defaultValue={dv.credential_name ?? ""}
             required
             placeholder="e.g. Associate in Science"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
           />
         </div>
       </section>
 
       <section>
-        <h3 className="text-sm font-medium text-slate-900 mb-2">Program length & academic terms</h3>
+        <h3 className="text-sm font-semibold text-brand-navy mb-2">Program length & academic terms</h3>
         <div className="grid grid-cols-3 gap-4">
           {NUMBER_FIELDS.map((f) => (
             <div key={f.name}>
@@ -102,7 +102,7 @@ export function ProgramForm({
                 type="number"
                 step={f.step ?? "1"}
                 defaultValue={(dv[f.name] as number | undefined) ?? 0}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
               />
             </div>
           ))}
@@ -110,7 +110,7 @@ export function ProgramForm({
       </section>
 
       <section>
-        <h3 className="text-sm font-medium text-slate-900 mb-2">Fixed fees printed on the contract</h3>
+        <h3 className="text-sm font-semibold text-brand-navy mb-2">Fixed fees printed on the contract</h3>
         <div className="grid grid-cols-3 gap-4">
           {FEE_FIELDS.map((f) => (
             <div key={f.name}>
@@ -120,7 +120,7 @@ export function ProgramForm({
                 type="number"
                 step="0.01"
                 defaultValue={(dv[f.name] as number | undefined) ?? 0}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
               />
             </div>
           ))}
@@ -128,7 +128,7 @@ export function ProgramForm({
       </section>
 
       <section>
-        <h3 className="text-sm font-medium text-slate-900 mb-2">
+        <h3 className="text-sm font-semibold text-brand-navy mb-2">
           Hours and days available (page 4 of the contract)
         </h3>
         <div className="grid grid-cols-4 gap-4">
@@ -140,7 +140,7 @@ export function ProgramForm({
                 type="number"
                 step="0.01"
                 defaultValue={(dv[f.name] as number | undefined) ?? 0}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
               />
             </div>
           ))}
@@ -149,7 +149,7 @@ export function ProgramForm({
 
       <button
         type="submit"
-        className="rounded-md bg-slate-900 text-white text-sm font-medium px-4 py-2 hover:bg-slate-800"
+        className="rounded-lg bg-brand-navy text-white text-sm font-medium px-4 py-2.5 shadow-sm hover:bg-brand-blue transition-colors"
       >
         {submitLabel}
       </button>
