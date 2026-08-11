@@ -87,6 +87,30 @@ export async function approveUser(userId: string): Promise<{ error?: string }> {
   return {};
 }
 
+export async function updateUserName(userId: string, fullName: string): Promise<{ error?: string }> {
+  await requireAdmin();
+  const trimmed = fullName.trim();
+  if (!trimmed) return { error: "Name can't be empty" };
+
+  const admin = createAdminClient();
+  const { error } = await admin.from("profiles").update({ full_name: trimmed }).eq("id", userId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/users");
+  return {};
+}
+
+export async function adminResetPassword(userId: string, newPassword: string): Promise<{ error?: string }> {
+  await requireAdmin();
+  if (newPassword.length < 6) return { error: "Password must be at least 6 characters" };
+
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.updateUserById(userId, { password: newPassword });
+  if (error) return { error: error.message };
+
+  return {};
+}
+
 export async function updateUserRole(userId: string, role: "admin" | "staff"): Promise<{ error?: string }> {
   const actingProfile = await requireAdmin();
   if (userId === actingProfile.id && role !== "admin") {

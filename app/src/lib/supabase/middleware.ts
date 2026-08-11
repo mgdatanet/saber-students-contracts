@@ -1,7 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login"];
+// /reset-password must stay public: the recovery session it needs is
+// established client-side from the URL hash fragment (never sent to the
+// server), so there's no server-side session yet when this middleware runs.
+const PUBLIC_PATHS = ["/login", "/forgot-password", "/reset-password"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

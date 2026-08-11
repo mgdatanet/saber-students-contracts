@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
 export async function signIn(formData: FormData) {
@@ -46,6 +47,24 @@ export async function signUp(formData: FormData) {
   redirect(
     "/login?message=Check your email to confirm your account. An admin must also approve your account before you can sign in."
   );
+}
+
+export async function requestPasswordReset(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+  const supabase = await createClient();
+
+  const requestHeaders = await headers();
+  const origin = requestHeaders.get("origin") ?? `https://${requestHeaders.get("host")}`;
+
+  if (email) {
+    // Always redirect to the same generic message regardless of whether the
+    // email matches an account — avoids leaking which addresses have accounts.
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${origin}/reset-password`,
+    });
+  }
+
+  redirect("/login?message=If that email has an account, a password reset link is on its way.");
 }
 
 export async function signOut() {

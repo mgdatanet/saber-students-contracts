@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { signIn, signUp } from "@/lib/actions/auth";
 
 export default async function LoginPage({
@@ -55,6 +56,9 @@ export default async function LoginPage({
           >
             Sign in
           </button>
+          <Link href="/forgot-password" className="block text-center text-xs text-slate-500 hover:text-brand-navy">
+            Forgot password?
+          </Link>
         </form>
 
         <details className="mt-4 bg-white rounded-2xl p-6 shadow-lg">

@@ -4,6 +4,8 @@ import { listUsers, createUser } from "@/lib/actions/users";
 import { UserRoleSelect } from "./UserRoleSelect";
 import { DeleteUserButton } from "./DeleteUserButton";
 import { ApproveUserButton } from "./ApproveUserButton";
+import { EditNameButton } from "./EditNameButton";
+import { ResetPasswordButton } from "./ResetPasswordButton";
 
 export default async function UsersPage({
   searchParams,
@@ -101,13 +103,19 @@ export default async function UsersPage({
                 <tbody>
                   {approvedUsers.map((u) => (
                     <tr key={u.id} className="border-t border-slate-100 hover:bg-brand-navy/5 transition-colors">
-                      <td className="px-5 py-3 font-medium text-brand-navy">{u.fullName}</td>
+                      <td className="px-5 py-3">
+                        <div className="font-medium text-brand-navy">{u.fullName}</div>
+                        <EditNameButton userId={u.id} fullName={u.fullName} />
+                      </td>
                       <td className="px-5 py-3">{u.email}</td>
                       <td className="px-5 py-3">
                         <UserRoleSelect userId={u.id} role={u.role} />
                       </td>
-                      <td className="px-5 py-3 text-right">
-                        {u.id !== user.id && <DeleteUserButton userId={u.id} email={u.email} />}
+                      <td className="px-5 py-3 text-right space-y-1">
+                        <div className="space-x-3 whitespace-nowrap">
+                          <ResetPasswordButton userId={u.id} email={u.email} />
+                          {u.id !== user.id && <DeleteUserButton userId={u.id} email={u.email} />}
+                        </div>
                       </td>
                     </tr>
                   ))}
