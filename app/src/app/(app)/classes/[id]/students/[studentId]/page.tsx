@@ -56,17 +56,17 @@ export default async function StudentDetailPage({
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <Link href={`/classes/${classId}`} className="text-sm text-slate-500 hover:text-slate-700">
+        <Link href={`/classes/${classId}`} className="text-sm text-slate-500 hover:text-brand-navy">
           ← {cls.code}
         </Link>
-        <div className="flex items-center justify-between mt-1">
-          <h1 className="text-lg font-semibold text-slate-900">
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-1">
+          <h1 className="text-2xl font-semibold text-brand-navy">
             {student.first_name} {student.last_name}
           </h1>
           <div className="flex items-center gap-3">
             {contract ? (
               <>
-                <span className="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-md px-3 py-1.5">
+                <span className="text-sm font-medium text-amber-700 bg-brand-gold/15 border border-brand-gold/30 rounded-lg px-3 py-1.5">
                   Contract {contract.contract_number} issued
                 </span>
                 <DownloadContractLink pdfPath={contract.pdf_path} />
@@ -94,19 +94,19 @@ export default async function StudentDetailPage({
       </div>
 
       {errorParam && (
-        <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{errorParam}</div>
+        <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{errorParam}</div>
       )}
 
       {contract && isAdmin && (
-        <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
+        <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
           Admin override: this student already has an issued contract. Editing below does <strong>not</strong>{" "}
           change the already-issued PDF — to correct a mistake, fix the data here, then use{" "}
           <strong>&ldquo;Delete Contract&rdquo;</strong> above and generate a new one.
         </div>
       )}
 
-      <div className="bg-white border border-slate-200 rounded-lg p-4">
-        <h2 className="text-sm font-medium text-slate-900">{editable ? "Edit Student Details" : "Student Details"}</h2>
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
+        <h2 className="text-sm font-semibold text-brand-navy">{editable ? "Edit Student Details" : "Student Details"}</h2>
         <form
           action={saveStudentIdentity.bind(null, classId, studentId)}
           className="grid grid-cols-3 gap-3 mt-3"
@@ -136,7 +136,7 @@ export default async function StudentDetailPage({
             <div className="col-span-3">
               <button
                 type="submit"
-                className="rounded-md border border-slate-300 text-slate-700 text-sm font-medium px-4 py-2 hover:bg-slate-50"
+                className="rounded-lg border border-brand-navy/30 text-brand-navy text-sm font-medium px-4 py-2.5 hover:bg-brand-navy/5 transition-colors"
               >
                 Save details
               </button>
@@ -190,7 +190,7 @@ function Field({
         required={required}
         defaultValue={defaultValue}
         disabled={disabled}
-        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-400"
+        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue disabled:bg-slate-50 disabled:text-slate-400"
       />
     </div>
   );

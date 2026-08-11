@@ -39,7 +39,7 @@ export function AdminDeleteStudentButton({
         type="button"
         onClick={handleClick}
         disabled={isPending}
-        className="text-sm text-red-700 hover:text-red-900 disabled:opacity-50 bg-red-50 border border-red-300 rounded-md px-3 py-1.5"
+        className="text-sm text-red-700 hover:text-red-900 disabled:opacity-50 bg-red-50 border border-red-300 rounded-lg px-3 py-1.5"
       >
         {isPending ? "Deleting…" : "Admin: Delete Student"}
       </button>

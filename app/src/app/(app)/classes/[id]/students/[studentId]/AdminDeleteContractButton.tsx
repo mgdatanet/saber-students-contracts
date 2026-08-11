@@ -31,7 +31,7 @@ export function AdminDeleteContractButton({ contractId }: { contractId: string }
         type="button"
         onClick={handleClick}
         disabled={isPending}
-        className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50 border border-red-200 rounded-md px-3 py-1.5"
+        className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50 border border-red-200 rounded-lg px-3 py-1.5"
       >
         {isPending ? "Deleting…" : "Delete Contract"}
       </button>

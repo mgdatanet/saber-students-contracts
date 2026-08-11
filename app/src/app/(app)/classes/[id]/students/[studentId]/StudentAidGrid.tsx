@@ -81,23 +81,23 @@ export function StudentAidGrid({
     <div className="space-y-4">
       {!locked && (
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-slate-900">Semester Aid</h2>
+          <h2 className="text-sm font-semibold text-brand-navy">Semester Aid</h2>
           <button
             type="button"
             onClick={fillFromSemesterOne}
-            className="text-sm text-slate-600 hover:text-slate-900 border border-slate-300 rounded-md px-3 py-1.5 hover:bg-slate-50"
+            className="text-sm text-brand-navy border border-brand-navy/30 rounded-lg px-3 py-1.5 hover:bg-brand-navy/5 transition-colors"
           >
             Fill semesters 2–6 from Semester 1
           </button>
         </div>
       )}
-      <div className="bg-white border border-slate-200 rounded-lg overflow-x-auto">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto">
         <table className="text-sm min-w-full">
-          <thead className="bg-slate-50 text-slate-500 text-left">
+          <thead className="bg-slate-50 text-slate-500 text-left uppercase text-xs tracking-wide">
             <tr>
-              <th className="px-3 py-2 sticky left-0 bg-slate-50">Field</th>
+              <th className="px-3 py-3 sticky left-0 bg-slate-50">Field</th>
               {semesters.map((s) => (
-                <th key={s.n} className="px-3 py-2 text-center">
+                <th key={s.n} className="px-3 py-3 text-center">
                   Semester {s.n}
                 </th>
               ))}
@@ -116,47 +116,47 @@ export function StudentAidGrid({
                       value={s[f.key] === 0 ? "" : s[f.key]}
                       placeholder="0"
                       onChange={(e) => updateField(s.n, f.key, e.target.value)}
-                      className="w-24 rounded-md border border-slate-300 px-2 py-1 text-sm text-right disabled:bg-slate-50 disabled:text-slate-400"
+                      className="w-24 rounded-lg border border-slate-300 px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue disabled:bg-slate-50 disabled:text-slate-400"
                     />
                   </td>
                 ))}
               </tr>
             ))}
 
-            <tr className="border-t-2 border-slate-200 bg-slate-50">
-              <td className="px-3 py-1.5 sticky left-0 bg-slate-50 font-medium text-slate-700">Total cost</td>
+            <tr className="border-t-2 border-slate-200 bg-brand-navy/5">
+              <td className="px-3 py-1.5 sticky left-0 bg-brand-navy/5 font-medium text-brand-navy">Total cost</td>
               {totals.semesters.map((s) => (
                 <td key={s.n} className="px-3 py-1.5 text-right text-slate-600">
                   {formatCurrency(s.costeSemestre)}
                 </td>
               ))}
             </tr>
-            <tr className="bg-slate-50">
-              <td className="px-3 py-1.5 sticky left-0 bg-slate-50 font-medium text-slate-700">Total aid</td>
+            <tr className="bg-brand-navy/5">
+              <td className="px-3 py-1.5 sticky left-0 bg-brand-navy/5 font-medium text-brand-navy">Total aid</td>
               {totals.semesters.map((s) => (
                 <td key={s.n} className="px-3 py-1.5 text-right text-slate-600">
                   {formatCurrency(s.ayudaSemestre)}
                 </td>
               ))}
             </tr>
-            <tr className="bg-slate-50">
-              <td className="px-3 py-1.5 sticky left-0 bg-slate-50 font-medium text-slate-700">Balance</td>
+            <tr className="bg-brand-navy/5">
+              <td className="px-3 py-1.5 sticky left-0 bg-brand-navy/5 font-medium text-brand-navy">Balance</td>
               {totals.semesters.map((s) => (
                 <td key={s.n} className="px-3 py-1.5 text-right text-slate-600">
                   {formatCurrency(s.saldo)}
                 </td>
               ))}
             </tr>
-            <tr className="bg-slate-50">
-              <td className="px-3 py-1.5 sticky left-0 bg-slate-50 font-medium text-slate-700">Financed</td>
+            <tr className="bg-brand-navy/5">
+              <td className="px-3 py-1.5 sticky left-0 bg-brand-navy/5 font-medium text-brand-navy">Financed</td>
               {totals.semesters.map((s) => (
                 <td key={s.n} className="px-3 py-1.5 text-right text-slate-600">
                   {formatCurrency(s.financiado)}
                 </td>
               ))}
             </tr>
-            <tr className="bg-slate-50">
-              <td className="px-3 py-1.5 sticky left-0 bg-slate-50 font-medium text-slate-700">Payments</td>
+            <tr className="bg-brand-navy/5">
+              <td className="px-3 py-1.5 sticky left-0 bg-brand-navy/5 font-medium text-brand-navy">Payments</td>
               {totals.semesters.map((s) => (
                 <td key={s.n} className="px-3 py-1.5 text-right text-slate-600">
                   {s.numPagos === 0 ? "—" : `${s.numPagos} × ${formatCurrency(s.importePago)}`}
@@ -167,29 +167,29 @@ export function StudentAidGrid({
         </table>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg p-4 grid grid-cols-4 gap-4 text-sm">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 grid grid-cols-4 gap-4 text-sm">
         <div>
           <div className="text-slate-500">Credits total</div>
-          <div className="font-medium text-slate-900">
+          <div className="font-medium text-brand-navy">
             {totals.creditsTotal} / {expectedCredits}
           </div>
         </div>
         <div>
           <div className="text-slate-500">Tuition</div>
-          <div className="font-medium text-slate-900">{formatCurrency(totals.matricula)}</div>
+          <div className="font-medium text-brand-navy">{formatCurrency(totals.matricula)}</div>
         </div>
         <div>
           <div className="text-slate-500">Total cost</div>
-          <div className="font-medium text-slate-900">{formatCurrency(totals.costeTotal)}</div>
+          <div className="font-medium text-brand-navy">{formatCurrency(totals.costeTotal)}</div>
         </div>
         <div>
           <div className="text-slate-500">Total aid</div>
-          <div className="font-medium text-slate-900">{formatCurrency(totals.ayudaTotal)}</div>
+          <div className="font-medium text-brand-navy">{formatCurrency(totals.ayudaTotal)}</div>
         </div>
       </div>
 
       {validation.errors.length > 0 && (
-        <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+        <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
           <ul className="list-disc list-inside">
             {validation.errors.map((e) => (
               <li key={e}>{e}</li>
@@ -198,7 +198,7 @@ export function StudentAidGrid({
         </div>
       )}
       {validation.warnings.length > 0 && (
-        <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
+        <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
           <ul className="list-disc list-inside">
             {validation.warnings.map((w) => (
               <li key={w}>{w}</li>
@@ -207,7 +207,7 @@ export function StudentAidGrid({
         </div>
       )}
       {saveError && (
-        <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{saveError}</div>
+        <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{saveError}</div>
       )}
 
       {!locked && (
@@ -216,11 +216,11 @@ export function StudentAidGrid({
             type="button"
             onClick={handleSave}
             disabled={isPending}
-            className="rounded-md bg-slate-900 text-white text-sm font-medium px-4 py-2 hover:bg-slate-800 disabled:opacity-50"
+            className="rounded-lg bg-brand-navy text-white text-sm font-medium px-4 py-2.5 shadow-sm hover:bg-brand-blue disabled:opacity-50 transition-colors"
           >
             {isPending ? "Saving…" : "Save"}
           </button>
-          {saved && !isPending && <span className="text-sm text-green-600">Saved.</span>}
+          {saved && !isPending && <span className="text-sm text-emerald-600">Saved.</span>}
         </div>
       )}
     </div>
