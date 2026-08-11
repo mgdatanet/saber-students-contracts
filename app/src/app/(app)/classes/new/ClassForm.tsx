@@ -85,7 +85,7 @@ export function ClassForm({
   return (
     <form action={action} className="space-y-6">
       {error && (
-        <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{error}</div>
+        <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{error}</div>
       )}
 
       <section className="grid grid-cols-2 gap-4">
@@ -101,7 +101,7 @@ export function ClassForm({
                 if (p) setWeeksTotal(p.weeks_total);
               }}
               required
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
             >
               {programs.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -118,7 +118,7 @@ export function ClassForm({
             required
             defaultValue={defaultValues?.code ?? ""}
             placeholder="e.g. RS 07-13-2026"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
           />
         </div>
         <div>
@@ -126,7 +126,7 @@ export function ClassForm({
           <select
             name="schedule"
             defaultValue={defaultValues?.schedule ?? "Day"}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
           >
             <option value="Day">Day</option>
             <option value="Evening">Evening</option>
@@ -137,7 +137,7 @@ export function ClassForm({
           <select
             name="method_of_delivery"
             defaultValue={defaultValues?.method_of_delivery ?? "Residential"}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
           >
             <option value="Residential">Residential</option>
             <option value="Blended Hybrid">Blended Hybrid</option>
@@ -149,7 +149,7 @@ export function ClassForm({
           <select
             name="signer_id"
             defaultValue={defaultValues?.signer_id ?? ""}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
           >
             {signers.map((s) => (
               <option key={s.id} value={s.id}>
@@ -164,15 +164,15 @@ export function ClassForm({
             name="cohort_label"
             defaultValue={defaultValues?.cohort_label ?? ""}
             placeholder="e.g. N-31"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
           />
         </div>
       </section>
 
       <section>
-        <h3 className="text-sm font-medium text-slate-900 mb-1">Rates, fees & academic terms</h3>
+        <h3 className="text-sm font-semibold text-brand-navy mb-1">Rates, fees & academic terms</h3>
         {locked ? (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mb-2">
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2">
             This class has issued contracts — these numbers are locked and cannot be changed.
           </p>
         ) : (
@@ -197,7 +197,7 @@ export function ClassForm({
                     : ((program?.[f.name] as number | undefined) ?? 0)
                 }
                 onChange={f.classField === "weeks_total" ? (e) => setWeeksTotal(Number(e.target.value) || 0) : undefined}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-400"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue disabled:bg-slate-50 disabled:text-slate-400"
               />
             </div>
           ))}
@@ -205,27 +205,27 @@ export function ClassForm({
       </section>
 
       <section>
-        <h3 className="text-sm font-medium text-slate-900 mb-1">The 6 semesters</h3>
+        <h3 className="text-sm font-semibold text-brand-navy mb-1">The 6 semesters</h3>
         <p className="text-xs text-slate-500 mb-2">
           All 6 must have dates before a contract can be issued. Type them manually, or give a first start date
           and calculate the rest automatically (using {weeksTotal} total weeks ÷ 6, with a 1-week break between
           semesters) — the calculated dates are still editable afterward.
         </p>
-        <div className="flex items-end gap-3 mb-3 bg-slate-50 border border-slate-200 rounded-md p-3">
+        <div className="flex items-end gap-3 mb-3 bg-brand-navy/5 border border-slate-200 rounded-lg p-3">
           <div>
             <label className="block text-sm text-slate-600 mb-1">First semester start date</label>
             <input
               type="date"
               value={calcStartDate}
               onChange={(e) => setCalcStartDate(e.target.value)}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
             />
           </div>
           <button
             type="button"
             onClick={calculateSemesters}
             disabled={!calcStartDate}
-            className="rounded-md border border-slate-300 text-slate-700 text-sm font-medium px-4 py-2 hover:bg-white disabled:opacity-50"
+            className="rounded-lg border border-brand-navy/30 text-brand-navy text-sm font-medium px-4 py-2.5 hover:bg-brand-navy/5 disabled:opacity-50 transition-colors"
           >
             Calculate 6 semesters
           </button>
@@ -242,7 +242,7 @@ export function ClassForm({
                 onChange={(e) =>
                   setSemesters((prev) => prev.map((x) => (x.n === s.n ? { ...x, start_date: e.target.value } : x)))
                 }
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
               />
               <input
                 name={`sem_${s.n}_end`}
@@ -252,7 +252,7 @@ export function ClassForm({
                 onChange={(e) =>
                   setSemesters((prev) => prev.map((x) => (x.n === s.n ? { ...x, end_date: e.target.value } : x)))
                 }
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
               />
             </div>
           ))}
@@ -261,7 +261,7 @@ export function ClassForm({
 
       <button
         type="submit"
-        className="rounded-md bg-slate-900 text-white text-sm font-medium px-4 py-2 hover:bg-slate-800"
+        className="rounded-lg bg-brand-navy text-white text-sm font-medium px-4 py-2.5 shadow-sm hover:bg-brand-blue transition-colors"
       >
         {submitLabel}
       </button>

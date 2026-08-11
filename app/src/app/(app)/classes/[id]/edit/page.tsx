@@ -25,8 +25,8 @@ export default async function EditClassPage({
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-lg font-semibold text-slate-900 mb-4">Edit Class — {cls.code}</h1>
-      <div className="bg-white border border-slate-200 rounded-lg p-6">
+      <h1 className="text-2xl font-semibold text-brand-navy mb-4">Edit Class — {cls.code}</h1>
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
         <ClassForm
           action={updateClass.bind(null, id)}
           programs={programs ?? []}
