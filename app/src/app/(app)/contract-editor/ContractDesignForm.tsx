@@ -41,8 +41,8 @@ export function ContractDesignForm({
 
   return (
     <form ref={formRef} action={saveContractDesign} className="space-y-6">
-      <section className="bg-white border border-slate-200 rounded-lg p-6">
-        <h2 className="text-sm font-medium text-slate-900 mb-1">Appearance</h2>
+      <section className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+        <h2 className="text-sm font-semibold text-brand-navy mb-1">Appearance</h2>
         <p className="text-xs text-slate-500 mb-4">
           Colors, font, and logo size. The legal layout (TILA disclosure boxes, payment schedule table, page
           structure) is fixed and cannot be changed here, so a visual tweak can never break federal compliance
@@ -51,7 +51,7 @@ export function ContractDesignForm({
         <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-sm text-slate-600 mb-1">Section header background</label>
-            <input type="color" name="primary_color" defaultValue={theme.primaryColor} className="h-9 w-14 rounded border border-slate-300" />
+            <input type="color" name="primary_color" defaultValue={theme.primaryColor} className="h-9 w-14 rounded-lg border border-slate-300" />
           </div>
           <div>
             <label className="block text-sm text-slate-600 mb-1">Section header text color</label>
@@ -59,16 +59,20 @@ export function ContractDesignForm({
               type="color"
               name="section_title_text_color"
               defaultValue={theme.sectionTitleTextColor}
-              className="h-9 w-14 rounded border border-slate-300"
+              className="h-9 w-14 rounded-lg border border-slate-300"
             />
           </div>
           <div>
             <label className="block text-sm text-slate-600 mb-1">Table border color</label>
-            <input type="color" name="border_color" defaultValue={theme.borderColor} className="h-9 w-14 rounded border border-slate-300" />
+            <input type="color" name="border_color" defaultValue={theme.borderColor} className="h-9 w-14 rounded-lg border border-slate-300" />
           </div>
           <div>
             <label className="block text-sm text-slate-600 mb-1">Font</label>
-            <select name="font_family" defaultValue={theme.fontFamily} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+            <select
+              name="font_family"
+              defaultValue={theme.fontFamily}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
+            >
               {FONT_FAMILY_OPTIONS.map((f) => (
                 <option key={f.value} value={f.value}>
                   {f.label}
@@ -85,7 +89,7 @@ export function ContractDesignForm({
               min={7}
               max={12}
               step="0.5"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
             />
           </div>
           <div>
@@ -96,7 +100,7 @@ export function ContractDesignForm({
               defaultValue={theme.logoMaxHeightPx}
               min={20}
               max={150}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
             />
           </div>
         </div>
@@ -104,7 +108,7 @@ export function ContractDesignForm({
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-sm font-medium text-slate-900">Contract Text</h2>
+          <h2 className="text-sm font-semibold text-brand-navy">Contract Text</h2>
           <p className="text-xs text-slate-500">
             The legal boilerplate printed on every contract. Basic HTML is supported (e.g. &lt;strong&gt;,
             &lt;ul&gt;&lt;li&gt;, &lt;br/&gt;). Tokens like <code>{"{{MIN_GRADE_PCT}}"}</code> are replaced
@@ -112,27 +116,30 @@ export function ContractDesignForm({
           </p>
         </div>
         {textBlocks.map((b) => (
-          <details key={b.key} className="bg-white border border-slate-200 rounded-lg p-4">
-            <summary className="text-sm font-medium text-slate-900 cursor-pointer">{b.label}</summary>
+          <details key={b.key} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
+            <summary className="text-sm font-semibold text-brand-navy cursor-pointer">{b.label}</summary>
             <textarea
               name={`text_${b.key}`}
               defaultValue={b.content}
               rows={8}
-              className="w-full mt-3 rounded-md border border-slate-300 px-3 py-2 text-sm font-mono"
+              className="w-full mt-3 rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
             />
           </details>
         ))}
       </section>
 
-      <div className="flex items-center gap-3 sticky bottom-4 bg-slate-50 border border-slate-200 rounded-lg p-3">
-        <button type="submit" className="rounded-md bg-slate-900 text-white text-sm font-medium px-4 py-2 hover:bg-slate-800">
+      <div className="flex flex-wrap items-center gap-3 sticky bottom-4 bg-white/95 backdrop-blur border border-slate-200 rounded-2xl shadow-sm p-3">
+        <button
+          type="submit"
+          className="rounded-lg bg-brand-navy text-white text-sm font-medium px-4 py-2.5 shadow-sm hover:bg-brand-blue transition-colors"
+        >
           Save All Changes
         </button>
         <button
           type="button"
           onClick={handlePreview}
           disabled={isPreviewPending}
-          className="rounded-md border border-slate-300 text-slate-700 text-sm font-medium px-4 py-2 hover:bg-white disabled:opacity-50"
+          className="rounded-lg border border-brand-navy/30 text-brand-navy text-sm font-medium px-4 py-2.5 hover:bg-brand-navy/5 disabled:opacity-50 transition-colors"
         >
           {isPreviewPending ? "Generating preview…" : "Preview Sample Contract"}
         </button>

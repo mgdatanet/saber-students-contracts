@@ -23,7 +23,7 @@ export default async function ContractEditorPage({
   return (
     <div className="max-w-3xl space-y-4">
       <div>
-        <h1 className="text-lg font-semibold text-slate-900">Contract Editor</h1>
+        <h1 className="text-2xl font-semibold text-brand-navy">Contract Editor</h1>
         <p className="text-sm text-slate-500">
           Every visual and text modifier for the printed contract lives here — colors, font, logo size, and the
           legal boilerplate text.
@@ -31,10 +31,10 @@ export default async function ContractEditorPage({
       </div>
 
       {error && (
-        <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{error}</div>
+        <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{error}</div>
       )}
       {saved && (
-        <div className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">
+        <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-700">
           Saved. New contracts will use these changes.
         </div>
       )}
