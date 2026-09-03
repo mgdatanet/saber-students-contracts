@@ -1,7 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/actions/profile";
 import { signOut } from "@/lib/actions/auth";
+import { createClient } from "@/lib/supabase/server";
+import { ACTIVE_SUBSCRIPTION_STATUSES, isSubscriptionGatingEnabled } from "@/lib/subscriptionGating";
 
 type NavItem = { href: string; label: string; icon: React.ReactNode; adminOnly?: boolean };
 
@@ -79,6 +82,18 @@ const NAV_ITEMS: NavItem[] = [
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireProfile();
+
+  // Payment gate: admins always get in (they're the ones who need to fix
+  // billing). Disabled by default via SUBSCRIPTION_GATING_ENABLED — see
+  // src/lib/subscriptionGating.ts.
+  if (isSubscriptionGatingEnabled() && profile.role !== "admin") {
+    const supabase = await createClient();
+    const { data: subscription } = await supabase.from("subscription").select("status").eq("id", "primary").single();
+
+    const isActive = !!subscription && ACTIVE_SUBSCRIPTION_STATUSES.includes(subscription.status);
+    if (!isActive) redirect("/pago-requerido");
+  }
+
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || profile.role === "admin");
 
   return (
