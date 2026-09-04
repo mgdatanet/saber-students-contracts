@@ -1,5 +1,11 @@
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  gracePeriodDaysFromEnv,
+  isInternalStatus,
+  resolveGracePeriodEnd,
+  toInternalStatus,
+} from "@/lib/billing/status";
 
 // Stripe's signature verification needs the raw request body, so this route
 // must run on Node (Edge doesn't expose the crypto APIs `stripe` needs) and
@@ -54,7 +60,9 @@ async function applyEvent(stripe: Stripe, event: Stripe.Event, supabaseAdmin: Ad
 
   const { data: row } = await supabaseAdmin
     .from("subscription")
-    .select("stripe_subscription_id, last_event_at")
+    .select(
+      "stripe_subscription_id, last_event_at, internal_status, grace_period_ends_at, paused_at, last_payment_at, last_payment_failed_at",
+    )
     .eq("id", "primary")
     .single();
 
@@ -78,12 +86,46 @@ async function applyEvent(stripe: Stripe, event: Stripe.Event, supabaseAdmin: Ad
       ? new Date(item.current_period_end * 1000).toISOString()
       : null;
 
+  // Stripe's status is stored as it arrives, but everything downstream reads
+  // the internal one. See src/lib/billing/status.ts.
+  const internalStatus = toInternalStatus(sub.status);
+
+  const lastPaymentAt =
+    event.type === "invoice.paid" ? eventAt.toISOString() : (row?.last_payment_at ?? null);
+
+  // The failure timestamp is the anchor of the grace period, so it is cleared
+  // the moment the subscription is paid up again: otherwise a failure months
+  // later would inherit a stale anchor and expire its margin instantly.
+  const lastPaymentFailedAt =
+    event.type === "invoice.payment_failed"
+      ? eventAt.toISOString()
+      : internalStatus === "ACTIVE"
+        ? null
+        : (row?.last_payment_failed_at ?? null);
+
+  const gracePeriodEndsAt = resolveGracePeriodEnd({
+    internalStatus,
+    previousInternalStatus: isInternalStatus(row?.internal_status) ? row.internal_status : null,
+    previousGracePeriodEnd: row?.grace_period_ends_at ?? null,
+    failedAt: lastPaymentFailedAt ? new Date(lastPaymentFailedAt) : eventAt,
+    graceDays: gracePeriodDaysFromEnv(),
+  });
+
+  // Only Stripe pausing the subscription is recorded here. A pause caused by an
+  // expired grace period is derived on read and has no event to timestamp.
+  const pausedAt = internalStatus === "PAUSED" ? (row?.paused_at ?? eventAt.toISOString()) : null;
+
   const { error } = await supabaseAdmin
     .from("subscription")
     .update({
       stripe_customer_id: typeof sub.customer === "string" ? sub.customer : sub.customer.id,
       stripe_subscription_id: sub.id,
       status: sub.status,
+      internal_status: internalStatus,
+      grace_period_ends_at: gracePeriodEndsAt,
+      paused_at: pausedAt,
+      last_payment_at: lastPaymentAt,
+      last_payment_failed_at: lastPaymentFailedAt,
       price_id: item?.price.id ?? null,
       current_period_end: periodEnd,
       cancel_at_period_end: sub.cancel_at_period_end,
