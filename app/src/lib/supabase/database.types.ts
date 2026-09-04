@@ -687,8 +687,13 @@ export type Database = {
         Row: {
           cancel_at_period_end: boolean
           current_period_end: string | null
+          grace_period_ends_at: string | null
           id: string
+          internal_status: string | null
           last_event_at: string | null
+          last_payment_at: string | null
+          last_payment_failed_at: string | null
+          paused_at: string | null
           price_id: string | null
           status: string
           stripe_customer_id: string | null
@@ -698,8 +703,13 @@ export type Database = {
         Insert: {
           cancel_at_period_end?: boolean
           current_period_end?: string | null
+          grace_period_ends_at?: string | null
           id?: string
+          internal_status?: string | null
           last_event_at?: string | null
+          last_payment_at?: string | null
+          last_payment_failed_at?: string | null
+          paused_at?: string | null
           price_id?: string | null
           status?: string
           stripe_customer_id?: string | null
@@ -709,8 +719,13 @@ export type Database = {
         Update: {
           cancel_at_period_end?: boolean
           current_period_end?: string | null
+          grace_period_ends_at?: string | null
           id?: string
+          internal_status?: string | null
           last_event_at?: string | null
+          last_payment_at?: string | null
+          last_payment_failed_at?: string | null
+          paused_at?: string | null
           price_id?: string | null
           status?: string
           stripe_customer_id?: string | null
