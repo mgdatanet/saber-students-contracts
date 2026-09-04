@@ -6,6 +6,6 @@ export function isSubscriptionGatingEnabled() {
   return process.env.SUBSCRIPTION_GATING_ENABLED === "true";
 }
 
-// Subscription statuses that count as "paid up". Everything else
-// (past_due, unpaid, canceled, inactive) blocks non-admin users.
-export const ACTIVE_SUBSCRIPTION_STATUSES = ["active", "trialing"];
+// Which statuses grant access is no longer decided here: Stripe's status is
+// mapped to an internal one in src/lib/billing/status.ts, which also applies
+// the grace period. This file is only the master switch.
