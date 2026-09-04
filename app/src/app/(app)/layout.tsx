@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/actions/profile";
 import { signOut } from "@/lib/actions/auth";
 import { createClient } from "@/lib/supabase/server";
-import { ACTIVE_SUBSCRIPTION_STATUSES, isSubscriptionGatingEnabled } from "@/lib/subscriptionGating";
+import { isSubscriptionGatingEnabled } from "@/lib/subscriptionGating";
+import { effectiveStatus, hasPlatformAccess, type InternalStatus } from "@/lib/billing/status";
+import BillingBanner from "./BillingBanner";
 
 type NavItem = { href: string; label: string; icon: React.ReactNode; adminOnly?: boolean };
 
@@ -86,12 +88,26 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Payment gate: admins always get in (they're the ones who need to fix
   // billing). Disabled by default via SUBSCRIPTION_GATING_ENABLED — see
   // src/lib/subscriptionGating.ts.
-  if (isSubscriptionGatingEnabled() && profile.role !== "admin") {
-    const supabase = await createClient();
-    const { data: subscription } = await supabase.from("subscription").select("status").eq("id", "primary").single();
+  //
+  // The row is read for everyone, not just staff, because the banner below is
+  // how an admin finds out the grace period is running out.
+  let billingStatus: InternalStatus = "ACTIVE";
+  let gracePeriodEndsAt: string | null = null;
 
-    const isActive = !!subscription && ACTIVE_SUBSCRIPTION_STATUSES.includes(subscription.status);
-    if (!isActive) redirect("/payment-required");
+  if (isSubscriptionGatingEnabled()) {
+    const supabase = await createClient();
+    const { data: subscription } = await supabase
+      .from("subscription")
+      .select("internal_status, status, grace_period_ends_at")
+      .eq("id", "primary")
+      .single();
+
+    // PAST_DUE lapses into PAUSED when the grace period expires; that is
+    // decided here, on the read, so no scheduled job is needed.
+    billingStatus = effectiveStatus(subscription);
+    gracePeriodEndsAt = subscription?.grace_period_ends_at ?? null;
+
+    if (!hasPlatformAccess(billingStatus) && profile.role !== "admin") redirect("/payment-required");
   }
 
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || profile.role === "admin");
@@ -149,6 +165,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </header>
 
       <div className="flex-1 min-w-0">
+        <BillingBanner
+          status={billingStatus}
+          gracePeriodEndsAt={gracePeriodEndsAt}
+          isAdmin={profile.role === "admin"}
+        />
         <main className="max-w-6xl mx-auto px-4 md:px-8 py-6 md:py-8">{children}</main>
       </div>
     </div>
