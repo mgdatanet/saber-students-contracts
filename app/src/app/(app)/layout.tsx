@@ -91,7 +91,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     const { data: subscription } = await supabase.from("subscription").select("status").eq("id", "primary").single();
 
     const isActive = !!subscription && ACTIVE_SUBSCRIPTION_STATUSES.includes(subscription.status);
-    if (!isActive) redirect("/pago-requerido");
+    if (!isActive) redirect("/payment-required");
   }
 
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || profile.role === "admin");
