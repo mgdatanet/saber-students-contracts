@@ -2,7 +2,8 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
-import { ACTIVE_SUBSCRIPTION_STATUSES, isSubscriptionGatingEnabled } from "@/lib/subscriptionGating";
+import { isSubscriptionGatingEnabled } from "@/lib/subscriptionGating";
+import { effectiveStatus, hasPlatformAccess } from "@/lib/billing/status";
 
 // Intentionally outside the (app) route group: that layout is what redirects
 // here when the subscription isn't active, so if this page lived inside it
@@ -25,9 +26,16 @@ export default async function PaymentRequiredPage() {
     redirect("/classes");
   }
 
-  const { data: subscription } = await supabase.from("subscription").select("status").eq("id", "primary").single();
-  const isActive = !!subscription && ACTIVE_SUBSCRIPTION_STATUSES.includes(subscription.status);
-  if (isActive) redirect("/classes");
+  const { data: subscription } = await supabase
+    .from("subscription")
+    .select("internal_status, status, grace_period_ends_at")
+    .eq("id", "primary")
+    .single();
+
+  // The grace period counts as access, so a staff member who lands here during
+  // the margin is sent straight back into the app.
+  const status = effectiveStatus(subscription);
+  if (hasPlatformAccess(status)) redirect("/classes");
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-brand-navy to-brand-blue px-4 py-12">
@@ -38,9 +46,11 @@ export default async function PaymentRequiredPage() {
         <div className="bg-white rounded-2xl p-6 shadow-lg space-y-3">
           <h1 className="font-semibold text-brand-navy text-lg">Payment required</h1>
           <p className="text-sm text-slate-600">
-            Access to the platform is temporarily paused because there is an outstanding payment on the
-            subscription. Your data has not been affected — nothing has been deleted, and access is restored
-            automatically once the payment is processed.
+            {status === "CANCELED"
+              ? "Access to the platform is paused because the subscription has been canceled."
+              : "Access to the platform is temporarily paused because there is an outstanding payment on the subscription."}{" "}
+            Your data has not been affected — nothing has been deleted, and access is restored automatically
+            once the subscription is up to date.
           </p>
           <p className="text-sm text-slate-600">
             Please contact an administrator to resolve the account&apos;s billing status.
