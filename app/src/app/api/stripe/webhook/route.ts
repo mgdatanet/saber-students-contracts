@@ -23,6 +23,10 @@ const RELEVANT_EVENTS = new Set([
   "customer.subscription.deleted",
   "invoice.paid",
   "invoice.payment_failed",
+  // Fires when a `send_invoice` subscription's invoice passes its due date
+  // unpaid. `send_invoice` subscriptions never auto-charge, so they never
+  // produce invoice.payment_failed — this is their equivalent signal.
+  "invoice.overdue",
 ]);
 
 // A claim left in "processing" for longer than this is assumed to be a crashed
@@ -88,7 +92,16 @@ async function applyEvent(stripe: Stripe, event: Stripe.Event, supabaseAdmin: Ad
 
   // Stripe's status is stored as it arrives, but everything downstream reads
   // the internal one. See src/lib/billing/status.ts.
-  const internalStatus = toInternalStatus(sub.status);
+  let internalStatus = toInternalStatus(sub.status);
+
+  // A `send_invoice` subscription never auto-charges, so Stripe never moves
+  // its `status` to past_due/unpaid on its own — it stays "active" even with
+  // an overdue invoice sitting unpaid. invoice.overdue is that model's only
+  // signal of a payment problem, so it has to force the escalation here
+  // instead of falling out of toInternalStatus(sub.status) above.
+  if (event.type === "invoice.overdue" && internalStatus === "ACTIVE") {
+    internalStatus = "PAST_DUE";
+  }
 
   const lastPaymentAt =
     event.type === "invoice.paid" ? eventAt.toISOString() : (row?.last_payment_at ?? null);
@@ -97,7 +110,7 @@ async function applyEvent(stripe: Stripe, event: Stripe.Event, supabaseAdmin: Ad
   // the moment the subscription is paid up again: otherwise a failure months
   // later would inherit a stale anchor and expire its margin instantly.
   const lastPaymentFailedAt =
-    event.type === "invoice.payment_failed"
+    event.type === "invoice.payment_failed" || event.type === "invoice.overdue"
       ? eventAt.toISOString()
       : internalStatus === "ACTIVE"
         ? null
