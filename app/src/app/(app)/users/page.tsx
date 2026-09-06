@@ -1,11 +1,21 @@
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/actions/profile";
 import { listUsers, createUser } from "@/lib/actions/users";
+import { openBillingPortal } from "@/lib/actions/billing";
+import { createClient } from "@/lib/supabase/server";
+import { effectiveStatus } from "@/lib/billing/status";
 import { UserRoleSelect } from "./UserRoleSelect";
 import { DeleteUserButton } from "./DeleteUserButton";
 import { ApproveUserButton } from "./ApproveUserButton";
 import { EditNameButton } from "./EditNameButton";
 import { ResetPasswordButton } from "./ResetPasswordButton";
+
+const BILLING_STATUS_LABEL: Record<ReturnType<typeof effectiveStatus>, string> = {
+  ACTIVE: "Active",
+  PAST_DUE: "Payment past due",
+  PAUSED: "Paused",
+  CANCELED: "Canceled",
+};
 
 export default async function UsersPage({
   searchParams,
@@ -16,6 +26,14 @@ export default async function UsersPage({
   if (profile.role !== "admin") redirect("/classes");
 
   const { error } = await searchParams;
+
+  const supabase = await createClient();
+  const { data: subscription } = await supabase
+    .from("subscription")
+    .select("internal_status, status, stripe_customer_id")
+    .eq("id", "primary")
+    .single();
+  const billingStatus = effectiveStatus(subscription);
 
   let users: Awaited<ReturnType<typeof listUsers>> = [];
   let loadError: string | null = null;
@@ -38,6 +56,24 @@ export default async function UsersPage({
           Everyone with access to this app, and their role. Self-signup is limited to @sabercollege.edu addresses
           and still needs your approval below before the account can sign in.
         </p>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-semibold text-brand-navy">Billing</h2>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Subscription status: <span className="font-medium text-slate-700">{BILLING_STATUS_LABEL[billingStatus]}</span>
+          </p>
+        </div>
+        <form action={openBillingPortal}>
+          <button
+            type="submit"
+            disabled={!subscription?.stripe_customer_id}
+            className="rounded-lg bg-brand-navy text-white text-sm font-medium px-4 py-2.5 shadow-sm hover:bg-brand-blue disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+          >
+            Manage billing
+          </button>
+        </form>
       </div>
 
       {(error || loadError) && (
