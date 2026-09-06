@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
 import { isSubscriptionGatingEnabled } from "@/lib/subscriptionGating";
 import { effectiveStatus, hasPlatformAccess } from "@/lib/billing/status";
+import { BRAND } from "@/lib/brand";
 
 // Intentionally outside the (app) route group: that layout is what redirects
 // here when the subscription isn't active, so if this page lived inside it
@@ -41,7 +42,7 @@ export default async function PaymentRequiredPage() {
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-brand-navy to-brand-blue px-4 py-12">
       <div className="w-full max-w-sm text-center">
         <div className="inline-flex bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <Image src="/logo.png" alt="SABER College" width={220} height={220} className="h-24 w-auto" priority />
+          <Image src={BRAND.logoSrc} alt={BRAND.name} width={220} height={220} className="h-24 w-auto" priority />
         </div>
         <div className="bg-white rounded-2xl p-6 shadow-lg space-y-3">
           <h1 className="font-semibold text-brand-navy text-lg">Payment required</h1>
