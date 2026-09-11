@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { requireStaffProfile } from "@/lib/actions/profile";
 import { DeleteClassButton } from "./DeleteClassButton";
 
 export default async function ClassesPage() {
+  await requireStaffProfile();
   const supabase = await createClient();
   const { data: classes } = await supabase
     .from("classes")

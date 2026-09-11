@@ -9,7 +9,7 @@ export interface UserRow {
   id: string;
   email: string;
   fullName: string;
-  role: "admin" | "staff";
+  role: "admin" | "staff" | "financial_aid";
   approved: boolean;
   createdAt: string;
 }
@@ -38,7 +38,7 @@ export async function listUsers(): Promise<UserRow[]> {
         id: u.id,
         email: u.email ?? "",
         fullName: profile?.full_name ?? (u.user_metadata?.full_name as string) ?? "",
-        role: (profile?.role ?? "staff") as "admin" | "staff",
+        role: (profile?.role ?? "staff") as "admin" | "staff" | "financial_aid",
         approved: profile?.approved ?? true,
         createdAt: profile?.created_at ?? u.created_at,
       };
@@ -53,7 +53,7 @@ export async function createUser(formData: FormData): Promise<void> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const fullName = String(formData.get("full_name") ?? "").trim();
-  const role = String(formData.get("role") ?? "staff") as "admin" | "staff";
+  const role = String(formData.get("role") ?? "staff") as "admin" | "staff" | "financial_aid";
 
   if (!email || !password || !fullName) {
     redirect(`/users?error=${encodeURIComponent("Name, email, and password are required")}`);
@@ -111,7 +111,10 @@ export async function adminResetPassword(userId: string, newPassword: string): P
   return {};
 }
 
-export async function updateUserRole(userId: string, role: "admin" | "staff"): Promise<{ error?: string }> {
+export async function updateUserRole(
+  userId: string,
+  role: "admin" | "staff" | "financial_aid",
+): Promise<{ error?: string }> {
   const actingProfile = await requireAdmin();
   if (userId === actingProfile.id && role !== "admin") {
     return { error: "You can't remove your own admin access" };

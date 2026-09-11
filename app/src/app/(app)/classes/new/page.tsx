@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireStaffProfile } from "@/lib/actions/profile";
 import { createClass } from "@/lib/actions/classes";
 import { ClassForm } from "./ClassForm";
 
@@ -7,6 +8,7 @@ export default async function NewClassPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireStaffProfile();
   const { error } = await searchParams;
   const supabase = await createClient();
   const [{ data: programs }, { data: signers }] = await Promise.all([

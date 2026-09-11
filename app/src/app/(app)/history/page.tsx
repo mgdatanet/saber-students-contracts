@@ -1,10 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireStaffProfile } from "@/lib/actions/profile";
 
 export default async function HistoryPage({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  await requireStaffProfile();
   const { q } = await searchParams;
   const supabase = await createClient();
 

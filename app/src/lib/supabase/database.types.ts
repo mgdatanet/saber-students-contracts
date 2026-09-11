@@ -267,36 +267,60 @@ export type Database = {
         Row: {
           class_id: string
           contract_number: string
+          countersigned_at: string | null
+          countersigned_by: string | null
           id: string
           issued_at: string
           issued_by: string | null
           pdf_path: string | null
+          sent_at: string | null
+          sign_token: string | null
+          sign_token_expires_at: string | null
           status: Database["public"]["Enums"]["contract_status"]
           student_id: string
+          student_signature_ip: string | null
+          student_signature_path: string | null
+          student_signed_at: string | null
           totals_snapshot: Json
           tuition_per_credit_applied: number
         }
         Insert: {
           class_id: string
           contract_number: string
+          countersigned_at?: string | null
+          countersigned_by?: string | null
           id?: string
           issued_at?: string
           issued_by?: string | null
           pdf_path?: string | null
+          sent_at?: string | null
+          sign_token?: string | null
+          sign_token_expires_at?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
           student_id: string
+          student_signature_ip?: string | null
+          student_signature_path?: string | null
+          student_signed_at?: string | null
           totals_snapshot: Json
           tuition_per_credit_applied: number
         }
         Update: {
           class_id?: string
           contract_number?: string
+          countersigned_at?: string | null
+          countersigned_by?: string | null
           id?: string
           issued_at?: string
           issued_by?: string | null
           pdf_path?: string | null
+          sent_at?: string | null
+          sign_token?: string | null
+          sign_token_expires_at?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
           student_id?: string
+          student_signature_ip?: string | null
+          student_signature_path?: string | null
+          student_signed_at?: string | null
           totals_snapshot?: Json
           tuition_per_credit_applied?: number
         }
@@ -306,6 +330,13 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_countersigned_by_fkey"
+            columns: ["countersigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -634,6 +665,7 @@ export type Database = {
           contract_date: string | null
           created_at: string
           date_of_birth: string | null
+          email: string | null
           first_name: string
           id: string
           last_name: string
@@ -649,6 +681,7 @@ export type Database = {
           contract_date?: string | null
           created_at?: string
           date_of_birth?: string | null
+          email?: string | null
           first_name: string
           id?: string
           last_name: string
@@ -664,6 +697,7 @@ export type Database = {
           contract_date?: string | null
           created_at?: string
           date_of_birth?: string | null
+          email?: string | null
           first_name?: string
           id?: string
           last_name?: string
@@ -747,10 +781,15 @@ export type Database = {
     }
     Enums: {
       class_schedule: "Day" | "Evening"
-      contract_status: "issued"
+      contract_status:
+        | "issued"
+        | "pending_signature"
+        | "signed_by_student"
+        | "countersigned"
+        | "voided"
       degree_type: "associate" | "diploma"
       delivery_method: "Residential" | "Blended Hybrid" | "Full Distance"
-      user_role: "admin" | "staff"
+      user_role: "admin" | "staff" | "financial_aid"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -879,10 +918,16 @@ export const Constants = {
   public: {
     Enums: {
       class_schedule: ["Day", "Evening"],
-      contract_status: ["issued"],
+      contract_status: [
+        "issued",
+        "pending_signature",
+        "signed_by_student",
+        "countersigned",
+        "voided",
+      ],
       degree_type: ["associate", "diploma"],
       delivery_method: ["Residential", "Blended Hybrid", "Full Distance"],
-      user_role: ["admin", "staff"],
+      user_role: ["admin", "staff", "financial_aid"],
     },
   },
 } as const

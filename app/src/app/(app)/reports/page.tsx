@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { requireStaffProfile } from "@/lib/actions/profile";
 import { computeContract, formatCurrency } from "@/lib/calc";
 import { PrintButton } from "./PrintButton";
 import { ResultsTable, type ReportRow } from "./ResultsTable";
@@ -9,6 +10,7 @@ export default async function ReportsPage({
 }: {
   searchParams: Promise<{ q?: string; classId?: string; programId?: string }>;
 }) {
+  await requireStaffProfile();
   const { q, classId, programId } = await searchParams;
   const supabase = await createClient();
 

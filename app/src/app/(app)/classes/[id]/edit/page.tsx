@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireStaffProfile } from "@/lib/actions/profile";
 import { updateClass } from "@/lib/actions/classes";
 import { ClassForm } from "../../new/ClassForm";
 
@@ -10,6 +11,7 @@ export default async function EditClassPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireStaffProfile();
   const { id } = await params;
   const { error } = await searchParams;
   const supabase = await createClient();

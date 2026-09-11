@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/actions/profile";
 import { toggleProgramActive } from "@/lib/actions/programs";
@@ -6,6 +7,7 @@ import { formatCurrency } from "@/lib/calc";
 
 export default async function ProgramsPage() {
   const { profile } = await requireProfile();
+  if (profile.role === "financial_aid") redirect("/pending-signatures");
   const supabase = await createClient();
   const { data: programs } = await supabase.from("programs").select("*").order("code");
 

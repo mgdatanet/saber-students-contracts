@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/actions/profile";
 import { saveStudentIdentity } from "@/lib/actions/students";
@@ -20,6 +20,7 @@ export default async function StudentDetailPage({
   const { id: classId, studentId } = await params;
   const { error: errorParam } = await searchParams;
   const { profile } = await requireProfile();
+  if (profile.role === "financial_aid") redirect("/pending-signatures");
   const isAdmin = profile.role === "admin";
   const supabase = await createClient();
 

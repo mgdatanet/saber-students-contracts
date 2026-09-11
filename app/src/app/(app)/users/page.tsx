@@ -200,6 +200,7 @@ export default async function UsersPage({
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue"
             >
               <option value="staff">Staff</option>
+              <option value="financial_aid">Financial Aid</option>
               <option value="admin">Admin</option>
             </select>
           </div>

@@ -8,7 +8,8 @@ import { isSubscriptionGatingEnabled } from "@/lib/subscriptionGating";
 import { effectiveStatus, hasPlatformAccess, type InternalStatus } from "@/lib/billing/status";
 import BillingBanner from "./BillingBanner";
 
-type NavItem = { href: string; label: string; icon: React.ReactNode; adminOnly?: boolean };
+type Role = "admin" | "staff" | "financial_aid";
+type NavItem = { href: string; label: string; icon: React.ReactNode; roles?: Role[] };
 
 // Minimal inline stroke icons (no icon library dependency) matching the
 // sidebar nav in the approved brand mockup.
@@ -62,6 +63,15 @@ function IconDocEdit() {
     </svg>
   );
 }
+function IconCheckDoc() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="size-5">
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 3v5h5" />
+      <path d="m9 14.5 2 2 4-4" />
+    </svg>
+  );
+}
 function IconUsers() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="size-5">
@@ -73,13 +83,14 @@ function IconUsers() {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/classes", label: "Classes", icon: <IconLayers /> },
-  { href: "/reports", label: "Reports", icon: <IconChart /> },
-  { href: "/programs", label: "Programs", icon: <IconBook />, adminOnly: true },
-  { href: "/signers", label: "Signers", icon: <IconSignature />, adminOnly: true },
-  { href: "/contract-editor", label: "Contract Editor", icon: <IconDocEdit />, adminOnly: true },
-  { href: "/users", label: "Users", icon: <IconUsers />, adminOnly: true },
-  { href: "/history", label: "History", icon: <IconClock /> },
+  { href: "/classes", label: "Classes", icon: <IconLayers />, roles: ["admin", "staff"] },
+  { href: "/reports", label: "Reports", icon: <IconChart />, roles: ["admin", "staff"] },
+  { href: "/pending-signatures", label: "Pending Signatures", icon: <IconCheckDoc />, roles: ["admin", "financial_aid"] },
+  { href: "/programs", label: "Programs", icon: <IconBook />, roles: ["admin"] },
+  { href: "/signers", label: "Signers", icon: <IconSignature />, roles: ["admin"] },
+  { href: "/contract-editor", label: "Contract Editor", icon: <IconDocEdit />, roles: ["admin"] },
+  { href: "/users", label: "Users", icon: <IconUsers />, roles: ["admin"] },
+  { href: "/history", label: "History", icon: <IconClock />, roles: ["admin", "staff"] },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -110,7 +121,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     if (!hasPlatformAccess(billingStatus) && profile.role !== "admin") redirect("/payment-required");
   }
 
-  const items = NAV_ITEMS.filter((item) => !item.adminOnly || profile.role === "admin");
+  const items = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(profile.role));
 
   return (
     <div className="min-h-screen md:flex bg-slate-50">

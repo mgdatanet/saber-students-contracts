@@ -16,3 +16,11 @@ export async function requireProfile() {
 
   return { user, profile };
 }
+
+/** Like requireProfile(), but financial_aid only ever needs the pending-
+ *  signatures queue — everywhere else in the app bounces them there. */
+export async function requireStaffProfile() {
+  const result = await requireProfile();
+  if (result.profile.role === "financial_aid") redirect("/pending-signatures");
+  return result;
+}

@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireStaffProfile } from "@/lib/actions/profile";
 import { createSigner, toggleSignerActive } from "@/lib/actions/signers";
 
 export default async function SignersPage() {
+  await requireStaffProfile();
   const supabase = await createClient();
   const { data: signers } = await supabase.from("signers").select("*").order("full_name");
 

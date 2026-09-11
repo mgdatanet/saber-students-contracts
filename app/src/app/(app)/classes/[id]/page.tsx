@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireStaffProfile } from "@/lib/actions/profile";
 import { addStudent } from "@/lib/actions/classes";
 import { computeContract, validateStudent } from "@/lib/calc";
 import { GenerateAllButton } from "./GenerateAllButton";
@@ -14,6 +15,7 @@ export default async function ClassDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireStaffProfile();
   const { id } = await params;
   const { error } = await searchParams;
   const supabase = await createClient();
