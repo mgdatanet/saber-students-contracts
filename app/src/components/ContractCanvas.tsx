@@ -99,6 +99,8 @@ export function ContractCanvas({
   const [fitScale, setFitScale] = useState(1);
   const [userZoom, setUserZoom] = useState(1);
   const [mountedHtml, setMountedHtml] = useState<string | null>(null);
+  /** The document's own height, before scaling. */
+  const [contentHeight, setContentHeight] = useState(0);
 
   const { fontFaces, css, body } = splitContract(html);
   useContractFonts(fontFaces);
@@ -124,6 +126,26 @@ export function ContractCanvas({
     root.innerHTML = `<style>${css}${SLOT_UI_CSS}</style><div class="contract-body">${body}</div>`;
     setMountedHtml(html);
   }, [html, css, body]);
+
+  // The document is scaled with a transform, which every browser applies the
+  // same way. `zoom` looked tidier — no height to track — but Safari scales
+  // only part of the layout with it, which is how pages ended up overlapping
+  // on the phone. A transform leaves the unscaled box behind, so the wrapper
+  // is given the scaled height, measured from the live document.
+  useEffect(() => {
+    const element = host.current;
+    if (!element) return;
+
+    // offsetHeight is layout height, which a transform does not touch.
+    const track = () => setContentHeight(element.offsetHeight);
+    track();
+
+    const observer = new ResizeObserver(track);
+    observer.observe(element);
+    document.fonts?.ready.then(track).catch(() => {});
+
+    return () => observer.disconnect();
+  }, [mountedHtml]);
 
   // Slot decoration and click handling.
   useEffect(() => {
@@ -186,7 +208,12 @@ export function ContractCanvas({
       </div>
 
       <div ref={wrapper} className="w-full overflow-x-auto rounded-xl border border-slate-300 bg-white shadow-sm">
-        <div ref={host} style={{ width: PAGE_WIDTH, zoom: scale }} />
+        <div style={{ height: contentHeight * scale, width: PAGE_WIDTH * scale }}>
+          <div
+            ref={host}
+            style={{ width: PAGE_WIDTH, transform: `scale(${scale})`, transformOrigin: "top left" }}
+          />
+        </div>
       </div>
     </div>
   );

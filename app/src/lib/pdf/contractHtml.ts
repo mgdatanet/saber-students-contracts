@@ -235,7 +235,19 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   }
   @page { size: letter; margin: 0.5in; }
   * { box-sizing: border-box; }
-  body { font-family: ${bodyFontFamily}; font-size: ${theme.baseFontSizePt}pt; color: #111; margin: 0; }
+  body {
+    font-family: ${bodyFontFamily};
+    font-size: ${theme.baseFontSizePt}pt;
+    color: #111;
+    margin: 0;
+    /* Safari on iPhone inflates text inside blocks wider than the viewport —
+       and this document is a fixed 8.5in wide. Inflated text runs taller than
+       the page box that holds it, which is how pages ended up printed over one
+       another on a phone and nowhere else. The contract is a fixed-layout
+       document: its type sizes are not a suggestion. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   .page { page-break-after: always; }
   .page:last-child { page-break-after: auto; }
   /* Every page's content sits inside one thin outer frame, matching the
@@ -245,7 +257,11 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   /* Page 1 only: stretch the Information table to occupy the leftover
      vertical space instead of clumping at the top of the page (client
      feedback: the form read as "compressed"). */
-  .page-frame-fill { display: flex; flex-direction: column; height: 10in; }
+  /* min-height, not height: with a fixed height, content that runs even
+     slightly taller than the page — a fallback font measuring wider than the
+     embedded one, say — overflows the box and paints over the page below it
+     instead of pushing it down. */
+  .page-frame-fill { display: flex; flex-direction: column; min-height: 10in; }
   .page-frame-fill .info-table { flex: 1 1 auto; }
   .page-frame-fill .footer-note { margin-top: auto; }
   table { width: 100%; border-collapse: collapse; }
