@@ -53,6 +53,36 @@ export function ContractCanvas({
     return () => window.removeEventListener("resize", measure);
   }, [measure]);
 
+  // The document is written into the iframe from here rather than through a
+  // rendered `srcDoc` attribute: server-rendered, it finishes loading before
+  // React attaches the load handler, the event is missed, and the page sits
+  // there with its signature boxes inert. Readiness is then polled rather than
+  // taken from that one event, so a cached or instant parse cannot lose it
+  // either — the document is ready the moment its slots exist.
+  useEffect(() => {
+    if (frame.current && frame.current.srcdoc !== html) frame.current.srcdoc = html;
+  }, [html]);
+
+  useEffect(() => {
+    if (ready) return;
+
+    const check = () => {
+      const doc = frame.current?.contentDocument;
+      if (doc?.querySelector("[data-slot]")) {
+        setReady(true);
+        measure();
+        return true;
+      }
+      return false;
+    };
+
+    if (check()) return;
+    const timer = setInterval(() => {
+      if (check()) clearInterval(timer);
+    }, 120);
+    return () => clearInterval(timer);
+  }, [ready, measure]);
+
   // Slot decoration and click handling live inside the iframe document.
   const decorate = useCallback(() => {
     const doc = frame.current?.contentDocument;
@@ -132,7 +162,6 @@ export function ContractCanvas({
       <div style={{ height: docHeight * scale }}>
         <iframe
           ref={frame}
-          srcDoc={html}
           title="Enrollment agreement"
           scrolling="no"
           onLoad={() => {
