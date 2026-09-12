@@ -41,7 +41,11 @@ export function SignaturePad({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.scale(ratio, ratio);
-    ctx.lineWidth = 2.4;
+    // The drawn mark is captured large and then scaled down to fit its line on
+    // the contract — roughly a quarter of the size — so a stroke that looks
+    // right on the pad lands on the page as a hairline. Drawn heavier here, it
+    // reads like ink once it gets there.
+    ctx.lineWidth = 3.8;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.strokeStyle = "#16233A";
