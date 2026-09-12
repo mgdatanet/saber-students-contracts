@@ -4,9 +4,6 @@ import { requireProfile } from "@/lib/actions/profile";
 import { CountersignCard } from "./CountersignCard";
 import { ExecutedDownloadLink } from "@/components/ExecutedDownloadLink";
 
-/** How long the in-page preview of a contract PDF stays valid. */
-const PREVIEW_TTL_SECONDS = 60 * 30;
-
 // Financial Aid's home. Admins share it, because they countersign too.
 export default async function PendingSignaturesPage() {
   const { profile } = await requireProfile();
@@ -18,7 +15,7 @@ export default async function PendingSignaturesPage() {
     supabase
       .from("contracts")
       .select(
-        "id, contract_number, pdf_path, student_signed_at, students(first_name, last_name, email), classes(code, programs(name))",
+        "id, contract_number, student_signed_at, students(first_name, last_name, email), classes(code, programs(name))",
       )
       .eq("status", "signed_by_student")
       .order("student_signed_at", { ascending: true }),
@@ -32,20 +29,8 @@ export default async function PendingSignaturesPage() {
       .limit(8),
   ]);
 
-  // Signed preview URLs are minted here so the card can show the real document
-  // the moment it opens, without a round trip per click.
-  const previews = await Promise.all(
-    (pending ?? []).map(async (contract) => {
-      if (!contract.pdf_path) return null;
-      const { data } = await supabase.storage
-        .from("contracts")
-        .createSignedUrl(contract.pdf_path, PREVIEW_TTL_SECONDS);
-      return data?.signedUrl ?? null;
-    }),
-  );
-
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="max-w-6xl space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-brand-navy">Pending Signatures</h1>
         <p className="mt-1 text-sm text-slate-500">
@@ -57,7 +42,7 @@ export default async function PendingSignaturesPage() {
 
       {pending?.length ? (
         <div className="space-y-4">
-          {pending.map((contract, i) => (
+          {pending.map((contract) => (
             <CountersignCard
               key={contract.id}
               contractId={contract.id}
@@ -67,7 +52,6 @@ export default async function PendingSignaturesPage() {
               programName={contract.classes?.programs?.name ?? ""}
               className={contract.classes?.code ?? ""}
               studentSignedAt={contract.student_signed_at}
-              pdfUrl={previews[i]}
               signerName={profile.full_name}
             />
           ))}

@@ -280,9 +280,11 @@ export type Database = {
           sign_token_expires_at: string | null
           status: Database["public"]["Enums"]["contract_status"]
           student_id: string
+          student_initials_path: string | null
           student_signature_ip: string | null
           student_signature_path: string | null
           student_signed_at: string | null
+          student_signed_pdf_path: string | null
           totals_snapshot: Json
           tuition_per_credit_applied: number
         }
@@ -302,9 +304,11 @@ export type Database = {
           sign_token_expires_at?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
           student_id: string
+          student_initials_path?: string | null
           student_signature_ip?: string | null
           student_signature_path?: string | null
           student_signed_at?: string | null
+          student_signed_pdf_path?: string | null
           totals_snapshot: Json
           tuition_per_credit_applied: number
         }
@@ -324,9 +328,11 @@ export type Database = {
           sign_token_expires_at?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
           student_id?: string
+          student_initials_path?: string | null
           student_signature_ip?: string | null
           student_signature_path?: string | null
           student_signed_at?: string | null
+          student_signed_pdf_path?: string | null
           totals_snapshot?: Json
           tuition_per_credit_applied?: number
         }

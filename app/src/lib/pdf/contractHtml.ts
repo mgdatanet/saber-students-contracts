@@ -10,6 +10,7 @@ import {
 } from "@/lib/calc";
 import { applyTokens, type ContractTextBlocks } from "@/lib/contractText";
 import { DEFAULT_CONTRACT_THEME, type ContractTheme } from "@/lib/contractTheme";
+import type { SlotId } from "@/lib/signing/slots";
 import { LOGO_BASE64_PNG } from "./logoBase64";
 import { ARIMO_BOLD_WOFF2, ARIMO_REGULAR_WOFF2 } from "./fontBase64";
 
@@ -19,7 +20,7 @@ import { ARIMO_BOLD_WOFF2, ARIMO_REGULAR_WOFF2 } from "./fontBase64";
 // truth Financial Aid actually edits when the school's policies change.
 const DEFAULT_TEXT_BLOCKS: ContractTextBlocks = {
   cancellation_refund_policy: `
-    <tr><td>This Enrollment Agreement, in addition to the Institutional Catalog, constitutes a binding agreement between the student and the college upon acceptance. (Initial) __________.</td></tr>
+    <tr><td>This Enrollment Agreement, in addition to the Institutional Catalog, constitutes a binding agreement between the student and the college upon acceptance. (Initial) {{INITIALS}}.</td></tr>
     <tr><td><strong>Refund / Cancellation Policy</strong></td></tr>
     <tr><td>Our outlined refund policy is designed according to Fair Consumer Practices. Should student be terminated or cancelled for any reason, all refunds will be made according to following refund schedule.
     <ul>
@@ -126,15 +127,51 @@ function checkbox(checked: boolean): string {
   return checked ? "( X )" : "(   )";
 }
 
+/**
+ * The places in the contract a person actually signs or initials.
+ *
+ * Every render emits these as empty ruled boxes — which is exactly how the
+ * blank issued contract has always looked — and `stampContractHtml` later
+ * fills the same boxes with the drawn images. Because both the blank and the
+ * signed document come from one HTML source, a signature can only ever land
+ * where the paper form puts it.
+ */
+function slot(id: SlotId, kind: "initials" | "signature" | "date", content = ""): string {
+  return `<span class="sig-slot sig-slot-${kind}" data-slot="${id}" data-slot-kind="${kind}">${content}</span>`;
+}
+
+/**
+ * Fills signature/initial slots in an already-rendered contract with drawn
+ * images (or, for date slots, text). Anything not supplied stays blank, so the
+ * partially signed document is just the same contract with fewer boxes filled.
+ */
+export function stampContractHtml(html: string, values: Partial<Record<SlotId, string>>): string {
+  let stamped = html;
+
+  for (const [id, value] of Object.entries(values)) {
+    if (!value) continue;
+    const isImage = value.startsWith("data:image");
+    const filling = isImage ? `<img src="${value}" alt="" />` : esc(value);
+    const pattern = new RegExp(`(<span class="sig-slot[^"]*" data-slot="${id}"[^>]*>)[\\s\\S]*?(</span>)`);
+    stamped = stamped.replace(pattern, `$1${filling}$2`);
+  }
+
+  return stamped;
+}
+
 export function renderContractHtml(input: ContractHtmlInput): string {
   const { student, program, klass, semesters, semesterDates, signerName, contractNumber } = input;
   const blocks: ContractTextBlocks = { ...DEFAULT_TEXT_BLOCKS, ...input.textBlocks };
   const theme: ContractTheme = { ...DEFAULT_CONTRACT_THEME, ...input.theme };
   const totals = computeContract(semesters, klass.tuitionPerCredit);
   const fullName = [student.firstName, student.lastName].filter(Boolean).join(" ");
+  const contractDateText = student.contractDate ? formatPaymentDate(student.contractDate) : "";
 
   const cancellationRefundPolicy = applyTokens(blocks.cancellation_refund_policy, {
     REGISTRATION_FEE_PER_SEM: formatCurrency(klass.registrationFeePerSem),
+    // The one initial box that lives inside admin-editable text rather than in
+    // this file, so it moves with the policy wording instead of being pinned here.
+    INITIALS: slot("i2", "initials"),
   });
   const graduationRequirements = applyTokens(blocks.graduation_requirements, {
     MIN_GRADE_PCT: String(klass.minGradePct),
@@ -240,6 +277,15 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   /* The original document mixes sans-serif labels/tables with serif body
      copy for the dense legal paragraphs — this class marks those blocks. */
   .legal-text { font-family: 'Times New Roman', Times, serif; }
+  /* Signature and initial boxes. Empty they read as the ruled lines the paper
+     form has always had; filled they hold the drawn image sitting on that line. */
+  .sig-slot { display: inline-block; vertical-align: bottom; border-bottom: 1px solid #000; line-height: 1; }
+  .sig-slot img { display: block; max-height: 100%; max-width: 100%; width: auto; height: auto; margin: 0 auto; }
+  .sig-slot-initials { width: 110px; height: 30px; }
+  .sig-slot-signature { width: 255px; height: 48px; }
+  .sig-slot-date { min-width: 130px; height: 20px; text-align: center; border-bottom: none; }
+  .sig-table td { padding: 10px 6px; vertical-align: bottom; white-space: nowrap; }
+  .initials-cell { white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -282,7 +328,7 @@ export function renderContractHtml(input: ContractHtmlInput): string {
       <td colspan="4" class="bold">
         <div class="method-row">
           <span>Method of Delivery: ${esc(klass.methodOfDelivery === "Full Distance" ? "Full Distance (Online)" : klass.methodOfDelivery)}</span>
-          <span>INITIALS _________</span>
+          <span class="initials-cell">INITIALS ${slot("i1", "initials")}</span>
         </div>
       </td>
     </tr>
@@ -307,7 +353,7 @@ export function renderContractHtml(input: ContractHtmlInput): string {
 <div class="page">
  <div class="page-frame">
   <table class="no-border">
-    <tr><td class="right"><span class="bold">INITIALS:</span> ________________</td></tr>
+    <tr><td class="right"><span class="bold">INITIALS:</span> ${slot("i3", "initials")}</td></tr>
   </table>
   <table>
     <tr>
@@ -375,7 +421,7 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   </table>
 
   <p class="small legal-text">All prices for the program are printed herein. Contracts will not be sold to a third party at any time. In cases when no payment plan is established, there will be no carrying charges, interest charges, or service charges connected or charged with the program.</p>
-  <p><span class="bold">NAME:</span> ${esc(fullName)} &nbsp;&nbsp;&nbsp;&nbsp; <span class="bold">INITIALS:</span> ________________</p>
+  <p><span class="bold">NAME:</span> ${esc(fullName)} &nbsp;&nbsp;&nbsp;&nbsp; <span class="bold">INITIALS:</span> ${slot("i4", "initials")}</p>
 
   <div class="section-title">Termination Policy</div>
   <div class="legal-text">${blocks.termination_policy}</div>
@@ -419,11 +465,17 @@ export function renderContractHtml(input: ContractHtmlInput): string {
   <p>Upon satisfactory completion of the program the student will be awarded a:<br/>
   ASSOCIATE DEGREE ${checkbox(program.degreeType === "associate")} &nbsp;&nbsp;&nbsp;&nbsp; DIPLOMA ${checkbox(program.degreeType === "diploma")}</p>
 
-  <table class="no-border">
-    <tr><td style="width:60%">Student Signature: ________________________________</td><td>Date: ${esc(student.contractDate ? formatPaymentDate(student.contractDate) : "")}</td></tr>
+  <table class="no-border sig-table">
+    <tr>
+      <td style="width:60%">Student Signature: ${slot("student-signature", "signature")}</td>
+      <td>Date: ${slot("d-student", "date", esc(contractDateText))}</td>
+    </tr>
     <tr><td>Parent Signature (if student is a minor)</td><td>Date:</td></tr>
-    <tr><td>Accepted by: ${esc(signerName)}</td><td>Date: ${esc(student.contractDate ? formatPaymentDate(student.contractDate) : "")}</td></tr>
-    <tr><td>School Official / Title</td><td></td></tr>
+    <tr>
+      <td>Accepted by: ${slot("school-signature", "signature")}</td>
+      <td>Date: ${slot("d-school", "date", esc(contractDateText))}</td>
+    </tr>
+    <tr><td>${esc(signerName)} &mdash; School Official / Title</td><td></td></tr>
   </table>
   <div class="page-footer">Conditions as they appear in all pages are part of this document.</div>
  </div>

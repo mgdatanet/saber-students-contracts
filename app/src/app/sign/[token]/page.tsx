@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { getContractByToken } from "@/lib/actions/signing";
-import { SignatureForm } from "./SignatureForm";
+import { SigningExperience } from "./SigningExperience";
 
 export const metadata = {
   title: "Sign your enrollment agreement — SABER College",
@@ -17,8 +17,8 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
   if (!contract) return <LinkUnavailable />;
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8">
-      <div className="mx-auto max-w-5xl space-y-5">
+    <main className="min-h-screen bg-slate-50 px-4 py-6">
+      <div className="mx-auto max-w-4xl space-y-5">
         <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-gradient-to-br from-brand-navy to-brand-blue p-6 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="flex size-19 shrink-0 items-center justify-center rounded-xl bg-white p-2">
@@ -31,48 +31,29 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
               <h1 className="text-xl font-semibold text-white">Sign your enrollment agreement</h1>
             </div>
           </div>
+          <dl className="flex flex-wrap gap-x-6 gap-y-1 text-white/85">
+            <Detail label="Student" value={contract.studentName} />
+            <Detail label="Program" value={contract.programName} />
+            <Detail label="Contract No." value={contract.contractNumber} />
+          </dl>
         </header>
 
         <Stepper signed={contract.alreadySigned} />
 
-        <div className="grid items-start gap-5 md:grid-cols-[280px_1fr]">
-          <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-500">Contract summary</h2>
-            <dl className="divide-y divide-slate-200">
-              <Detail label="Student" value={contract.studentName} />
-              <Detail label="Program" value={contract.programName} />
-              <Detail label="Class" value={contract.className} />
-              <Detail label="Contract No." value={contract.contractNumber} mono />
-            </dl>
-          </aside>
+        {contract.html ? (
+          <SigningExperience
+            token={token}
+            html={contract.html}
+            studentName={contract.studentName}
+            alreadySigned={contract.alreadySigned}
+          />
+        ) : (
+          <p className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-800">
+            The agreement isn&apos;t available right now. Please contact the school before signing.
+          </p>
+        )}
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-brand-navy">Enrollment Agreement</h2>
-            <p className="mb-4 text-sm text-slate-500">
-              Read the agreement below, then sign at the bottom of this page.
-            </p>
-
-            {contract.pdfUrl ? (
-              <iframe
-                src={contract.pdfUrl}
-                title={`Contract ${contract.contractNumber}`}
-                className="h-[420px] w-full rounded-lg border border-slate-200 bg-slate-100"
-              />
-            ) : (
-              <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-                The contract document isn&apos;t available right now. Please contact the school before signing.
-              </p>
-            )}
-
-            <SignatureForm
-              token={token}
-              studentName={contract.studentName}
-              alreadySigned={contract.alreadySigned}
-            />
-          </section>
-        </div>
-
-        <footer className="text-center text-xs leading-relaxed text-slate-500">
+        <footer className="pb-8 text-center text-xs leading-relaxed text-slate-500">
           Trouble with this document? Contact{" "}
           <a href="mailto:enrollments@sabercollege.edu" className="underline">
             enrollments@sabercollege.edu
@@ -109,13 +90,11 @@ function LinkUnavailable() {
   );
 }
 
-function Detail({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function Detail({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col gap-0.5 py-2.5 first:pt-0">
-      <dt className="text-[11px] uppercase tracking-wide text-slate-500">{label}</dt>
-      <dd className={`text-sm font-semibold text-slate-900 ${mono ? "font-mono text-brand-blue" : ""}`}>
-        {value || "—"}
-      </dd>
+    <div>
+      <dt className="text-[10px] uppercase tracking-wide text-white/60">{label}</dt>
+      <dd className="text-sm font-semibold text-white">{value || "—"}</dd>
     </div>
   );
 }

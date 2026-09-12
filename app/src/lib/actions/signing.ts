@@ -9,7 +9,10 @@ import { requireProfile } from "@/lib/actions/profile";
 import { requestOrigin } from "@/lib/appUrl";
 import { sendEmail } from "@/lib/email/send";
 import { signRequestEmail, studentSignedEmail, fullyExecutedEmail } from "@/lib/email/templates";
-import { buildExecutedPdf } from "@/lib/pdf/executedPdf";
+import { stampContractHtml } from "@/lib/pdf/contractHtml";
+import type { SlotId } from "@/lib/signing/slots";
+import { loadContractHtml } from "@/lib/pdf/contractDocument";
+import { renderHtmlToPdf } from "@/lib/pdf/renderPdf";
 
 /** How long a student's signing link stays valid. */
 const SIGN_LINK_DAYS = 7;
@@ -113,7 +116,10 @@ export type SignableContract = {
   studentName: string;
   programName: string;
   className: string;
-  pdfUrl: string | null;
+  /** The contract itself, rendered as HTML so the student reads it full-size
+   *  and places their initials directly on the page instead of squinting at
+   *  an embedded PDF. */
+  html: string | null;
   alreadySigned: boolean;
 };
 
@@ -128,7 +134,7 @@ export async function getContractByToken(token: string): Promise<SignableContrac
   const { data: contract } = await admin
     .from("contracts")
     .select(
-      "id, contract_number, status, pdf_path, sign_token_expires_at, students(first_name, last_name), classes(code, programs(name))",
+      "id, contract_number, status, class_id, student_id, sign_token_expires_at, students(first_name, last_name), classes(code, programs(name))",
     )
     .eq("sign_token", token)
     .single();
@@ -143,20 +149,31 @@ export async function getContractByToken(token: string): Promise<SignableContrac
   // an already-signed contract still shows the confirmation.
   if (expired && !alreadySigned) return null;
 
-  let pdfUrl: string | null = null;
-  if (contract.pdf_path) {
-    const { data } = await admin.storage.from("contracts").createSignedUrl(contract.pdf_path, 60 * 30);
-    pdfUrl = data?.signedUrl ?? null;
-  }
+  const { html } = await loadContractHtml(admin, contract);
 
   return {
     contractNumber: contract.contract_number,
     studentName: `${contract.students?.first_name ?? ""} ${contract.students?.last_name ?? ""}`.trim(),
     programName: contract.classes?.programs?.name ?? "",
     className: contract.classes?.code ?? "",
-    pdfUrl,
+    html,
     alreadySigned,
   };
+}
+
+/** The date stamped next to a signature, in the school's own timezone. */
+function signatureDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    timeZone: "America/New_York",
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
+}
+
+/** A data URL pdf-lib-free rendering needs to embed the drawn image inline. */
+function pngDataUrl(png: Buffer): string {
+  return `data:image/png;base64,${png.toString("base64")}`;
 }
 
 /**
@@ -166,12 +183,13 @@ export async function getContractByToken(token: string): Promise<SignableContrac
 export async function submitStudentSignature(
   token: string,
   signatureDataUrl: string,
+  initialsDataUrl: string,
 ): Promise<{ error?: string }> {
   const admin = createAdminClient();
 
   const { data: contract } = await admin
     .from("contracts")
-    .select("id, contract_number, class_id, status, sign_token_expires_at, students(first_name, last_name)")
+    .select("id, contract_number, class_id, student_id, status, sign_token_expires_at, students(first_name, last_name)")
     .eq("sign_token", token)
     .single();
 
@@ -181,21 +199,54 @@ export async function submitStudentSignature(
     return { error: "This signing link has expired. Please ask the school to send a new one." };
   }
 
-  const { png: signature, error: decodeError } = decodeSignaturePng(signatureDataUrl);
-  if (!signature) return { error: decodeError };
+  const { png: signature, error: signatureError } = decodeSignaturePng(signatureDataUrl);
+  if (!signature) return { error: signatureError };
 
-  const signaturePath = `${contract.class_id}/${contract.contract_number}-student-signature.png`;
-  const { error: uploadError } = await admin.storage
-    .from("contracts")
-    .upload(signaturePath, signature, { contentType: "image/png", upsert: true });
+  const { png: initials, error: initialsError } = decodeSignaturePng(initialsDataUrl);
+  if (!initials) return { error: `Initials: ${initialsError}` };
+
+  const signedAt = new Date().toISOString();
+  const base = `${contract.class_id}/${contract.contract_number}`;
+
+  const uploads = await Promise.all([
+    admin.storage.from("contracts").upload(`${base}-student-signature.png`, signature, {
+      contentType: "image/png",
+      upsert: true,
+    }),
+    admin.storage.from("contracts").upload(`${base}-student-initials.png`, initials, {
+      contentType: "image/png",
+      upsert: true,
+    }),
+  ]);
+  const uploadError = uploads.find((u) => u.error)?.error;
   if (uploadError) return { error: `Could not store the signature: ${uploadError.message}` };
+
+  // Fill this contract's own signature boxes — the student's signature lands on
+  // the Student Signature line of page 4 and their initials on all four initial
+  // boxes, exactly where the paper form puts them.
+  const { html } = await loadContractHtml(admin, contract);
+  if (!html) return { error: "Could not load the contract document" };
+
+  const signedPdfPath = `${base}-student-signed.pdf`;
+  try {
+    const stamped = stampContractHtml(html, studentStamps(initials, signature, signedAt));
+    const pdf = await renderHtmlToPdf(stamped);
+    const { error: pdfError } = await admin.storage
+      .from("contracts")
+      .upload(signedPdfPath, pdf, { contentType: "application/pdf", upsert: true });
+    if (pdfError) return { error: `Could not store the signed contract: ${pdfError.message}` };
+  } catch (e) {
+    return { error: `Could not build the signed contract: ${e instanceof Error ? e.message : "unknown error"}` };
+  }
 
   const { error: updateError } = await admin
     .from("contracts")
     .update({
       status: "signed_by_student",
-      student_signed_at: new Date().toISOString(),
-      student_signature_path: signaturePath,
+      student_signed_at: signedAt,
+      student_signature_path: `${base}-student-signature.png`,
+      student_initials_path: `${base}-student-initials.png`,
+      student_signed_pdf_path: signedPdfPath,
       student_signature_ip: await clientIp(),
       // Spent: the link cannot be replayed once it has produced a signature.
       sign_token: null,
@@ -211,6 +262,19 @@ export async function submitStudentSignature(
   });
 
   return {};
+}
+
+/** Everything the student fills in: four initial boxes, the signature, the date. */
+function studentStamps(initials: Buffer, signature: Buffer, signedAt: string): Partial<Record<SlotId, string>> {
+  const initialsUrl = pngDataUrl(initials);
+  return {
+    i1: initialsUrl,
+    i2: initialsUrl,
+    i3: initialsUrl,
+    i4: initialsUrl,
+    "student-signature": pngDataUrl(signature),
+    "d-student": signatureDate(signedAt),
+  };
 }
 
 /**
@@ -260,14 +324,9 @@ function canCountersign(role: string): boolean {
   return role === "admin" || role === "financial_aid";
 }
 
-const ROLE_LABEL: Record<string, string> = {
-  admin: "Administrator",
-  financial_aid: "Financial Aid",
-};
-
 /**
- * Puts the school's signature on a contract the student has already signed,
- * builds the fully executed PDF, and emails the student their copy.
+ * Puts the school's signature on the "Accepted by" line of a contract the
+ * student has already signed, and emails the student the executed copy.
  *
  * The status change is written through the signer's own session, so RLS and the
  * contract-immutability trigger both apply: the database itself refuses any
@@ -288,7 +347,7 @@ export async function countersignContract(
   const { data: contract } = await supabase
     .from("contracts")
     .select(
-      "id, contract_number, status, class_id, student_id, pdf_path, student_signature_path, student_signed_at, student_signature_ip, students(first_name, last_name, email), classes(programs(name))",
+      "id, contract_number, status, class_id, student_id, student_signature_path, student_initials_path, student_signed_at, students(first_name, last_name, email)",
     )
     .eq("id", contractId)
     .single();
@@ -297,55 +356,50 @@ export async function countersignContract(
   if (contract.status !== "signed_by_student") {
     return { error: `This contract is ${contract.status.replace(/_/g, " ")} and can't be countersigned` };
   }
-  if (!contract.pdf_path) return { error: "This contract has no PDF on file" };
-  if (!contract.student_signature_path || !contract.student_signed_at) {
+  if (!contract.student_signature_path || !contract.student_initials_path || !contract.student_signed_at) {
     return { error: "The student's signature is missing — nothing to countersign" };
   }
 
   const admin = createAdminClient();
   const studentName = `${contract.students?.first_name ?? ""} ${contract.students?.last_name ?? ""}`.trim();
   const countersignedAt = new Date().toISOString();
+  const base = `${contract.class_id}/${contract.contract_number}`;
 
-  // Fetch the pieces the certificate page is built from.
-  const [issuedPdf, studentSignature] = await Promise.all([
-    admin.storage.from("contracts").download(contract.pdf_path),
+  // Rebuild from the contract's own frozen source with every box filled, rather
+  // than drawing on top of the student-signed PDF: one document, one renderer.
+  const [studentSignature, studentInitials, { html }] = await Promise.all([
     admin.storage.from("contracts").download(contract.student_signature_path),
+    admin.storage.from("contracts").download(contract.student_initials_path),
+    loadContractHtml(admin, contract),
   ]);
-  if (issuedPdf.error || !issuedPdf.data) return { error: `Could not read the contract PDF: ${issuedPdf.error?.message}` };
-  if (studentSignature.error || !studentSignature.data) {
-    return { error: `Could not read the student's signature: ${studentSignature.error?.message}` };
+  if (studentSignature.error || !studentSignature.data || studentInitials.error || !studentInitials.data) {
+    return { error: "Could not read the student's signature" };
   }
+  if (!html) return { error: "Could not load the contract document" };
 
-  const schoolSignaturePath = `${contract.class_id}/${contract.contract_number}-school-signature.png`;
+  const schoolSignaturePath = `${base}-school-signature.png`;
   const { error: signatureUploadError } = await admin.storage
     .from("contracts")
     .upload(schoolSignaturePath, schoolSignature, { contentType: "image/png", upsert: true });
   if (signatureUploadError) return { error: `Could not store the signature: ${signatureUploadError.message}` };
 
-  let executedPdf: Uint8Array;
+  const executedPdfPath = `${base}-executed.pdf`;
+  let executedPdf: Buffer;
   try {
-    executedPdf = await buildExecutedPdf({
-      contractPdf: new Uint8Array(await issuedPdf.data.arrayBuffer()),
-      contractNumber: contract.contract_number,
-      studentName,
-      programName: contract.classes?.programs?.name ?? "",
-      student: {
-        signaturePng: new Uint8Array(await studentSignature.data.arrayBuffer()),
-        signedAt: contract.student_signed_at,
-        ip: contract.student_signature_ip,
-      },
-      school: {
-        signaturePng: new Uint8Array(schoolSignature),
-        signedAt: countersignedAt,
-        name: profile.full_name,
-        role: ROLE_LABEL[profile.role] ?? "SABER College",
-      },
+    const stamped = stampContractHtml(html, {
+      ...studentStamps(
+        Buffer.from(await studentInitials.data.arrayBuffer()),
+        Buffer.from(await studentSignature.data.arrayBuffer()),
+        contract.student_signed_at,
+      ),
+      "school-signature": pngDataUrl(schoolSignature),
+      "d-school": signatureDate(countersignedAt),
     });
+    executedPdf = await renderHtmlToPdf(stamped);
   } catch (e) {
     return { error: `Could not build the signed PDF: ${e instanceof Error ? e.message : "unknown error"}` };
   }
 
-  const executedPdfPath = `${contract.class_id}/${contract.contract_number}-executed.pdf`;
   const { error: pdfUploadError } = await admin.storage
     .from("contracts")
     .upload(executedPdfPath, executedPdf, { contentType: "application/pdf", upsert: true });
@@ -369,7 +423,7 @@ export async function countersignContract(
   let emailError: string | undefined;
   if (contract.students?.email) {
     const origin = await requestOrigin();
-    const { subject, html } = fullyExecutedEmail({
+    const { subject, html: body } = fullyExecutedEmail({
       origin,
       studentName,
       contractNumber: contract.contract_number,
@@ -377,12 +431,9 @@ export async function countersignContract(
     const result = await sendEmail({
       to: contract.students.email,
       subject,
-      html,
+      html: body,
       attachments: [
-        {
-          filename: `${contract.contract_number}-signed.pdf`,
-          content: Buffer.from(executedPdf).toString("base64"),
-        },
+        { filename: `${contract.contract_number}-signed.pdf`, content: executedPdf.toString("base64") },
       ],
     });
     if (result.error) emailError = `Contract countersigned, but the copy to the student failed: ${result.error}`;
@@ -395,6 +446,53 @@ export async function countersignContract(
   revalidatePath(`/classes/${contract.class_id}`);
 
   return emailError ? { error: emailError } : {};
+}
+
+/**
+ * The contract as the student left it — their initials and signature already
+ * on the page — for the countersigner to read before adding theirs. Loaded on
+ * demand rather than with the queue, since it is the whole document.
+ */
+export async function getContractForCountersign(
+  contractId: string,
+): Promise<{ html?: string; error?: string }> {
+  const { profile } = await requireProfile();
+  if (!canCountersign(profile.role)) return { error: "Only Financial Aid or an admin can countersign" };
+
+  const supabase = await createClient();
+  const { data: contract } = await supabase
+    .from("contracts")
+    .select(
+      "class_id, student_id, contract_number, student_signature_path, student_initials_path, student_signed_at",
+    )
+    .eq("id", contractId)
+    .single();
+
+  if (!contract) return { error: "Contract not found" };
+  if (!contract.student_signature_path || !contract.student_initials_path || !contract.student_signed_at) {
+    return { error: "The student's signature is missing" };
+  }
+
+  const admin = createAdminClient();
+  const [signature, initials, { html }] = await Promise.all([
+    admin.storage.from("contracts").download(contract.student_signature_path),
+    admin.storage.from("contracts").download(contract.student_initials_path),
+    loadContractHtml(admin, contract),
+  ]);
+
+  if (!html) return { error: "Could not load the contract document" };
+  if (!signature.data || !initials.data) return { error: "Could not read the student's signature" };
+
+  return {
+    html: stampContractHtml(
+      html,
+      studentStamps(
+        Buffer.from(await initials.data.arrayBuffer()),
+        Buffer.from(await signature.data.arrayBuffer()),
+        contract.student_signed_at,
+      ),
+    ),
+  };
 }
 
 /** A short-lived link to the fully executed PDF, for the staff-side download. */

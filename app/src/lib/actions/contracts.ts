@@ -4,10 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/database.types";
 import { computeContract, validateStudent, type SemesterAidInput } from "@/lib/calc";
-import { renderContractHtml } from "@/lib/pdf/contractHtml";
 import { renderHtmlToPdf } from "@/lib/pdf/renderPdf";
-import { fetchContractTextBlocks } from "@/lib/contractText";
-import { fetchContractTheme } from "@/lib/contractThemeServer";
+import { contractHtmlPath, renderContractHtmlFor } from "@/lib/pdf/contractDocument";
 
 export interface IssueResult {
   success: boolean;
@@ -83,51 +81,19 @@ export async function issueContract(classId: string, studentId: string): Promise
 
   // Step 2: render and store the PDF, then attach its path (the only allowed update).
   try {
-    const [textBlocks, theme] = await Promise.all([fetchContractTextBlocks(), fetchContractTheme()]);
-    const html = renderContractHtml({
-      student: {
-        firstName: student.first_name,
-        lastName: student.last_name,
-        ssn: student.ssn,
-        dateOfBirth: student.date_of_birth,
-        phone: student.phone,
-        mobile: student.mobile,
-        address: student.address,
-        contractDate: student.contract_date,
-      },
-      program: {
-        name: cls.programs?.name ?? "",
-        credentialName: cls.programs?.credential_name ?? "",
-        degreeType: (cls.programs?.degree_type ?? "associate") as "associate" | "diploma",
-      },
-      klass: {
-        schedule: cls.schedule,
-        methodOfDelivery: cls.method_of_delivery,
-        tuitionPerCredit: cls.tuition_per_credit,
-        creditsTotal: cls.credits_total,
-        weeksTotal: cls.weeks_total,
-        monthsTotal: cls.months_total,
-        minGradePct: cls.min_grade_pct,
-        testingFee: cls.testing_fee,
-        applicationFeePerSem: cls.application_fee_per_sem,
-        registrationFeePerSem: cls.registration_fee_per_sem,
-        skillsLabFee: cls.skills_lab_fee,
-        materialsSuppliesFee: cls.materials_supplies_fee,
-        booksSuppliesFee: cls.books_supplies_fee,
-        blsFee: cls.bls_fee,
-        otherCostsFee: cls.other_costs_fee,
-        theoryLabHoursA: cls.theory_lab_hours_a,
-        clinicalHoursA: cls.clinical_hours_a,
-        theoryLabHoursB: cls.theory_lab_hours_b,
-        clinicalHoursB: cls.clinical_hours_b,
-      },
-      semesters: aid,
-      semesterDates: (semesterDates ?? []).map((d) => ({ n: d.n, startDate: d.start_date, endDate: d.end_date })),
-      signerName: cls.signers?.full_name ?? "",
-      contractNumber: contract.contract_number,
-      textBlocks,
-      theme,
-    });
+    const html = await renderContractHtmlFor(supabase, classId, studentId, contract.contract_number);
+    if (!html) return { success: false, error: "Could not render the contract" };
+
+    // The HTML is frozen alongside the PDF. Signing fills in this exact
+    // document's signature boxes rather than rendering a new one, so the signed
+    // contract is provably the contract that was issued.
+    const { error: htmlError } = await supabase.storage
+      .from("contracts")
+      .upload(contractHtmlPath(classId, contract.contract_number), html, {
+        contentType: "text/html; charset=utf-8",
+        upsert: true,
+      });
+    if (htmlError) return { success: false, error: `Could not store the contract source: ${htmlError.message}` };
 
     const pdfBuffer = await renderHtmlToPdf(html);
     const pdfPath = `${classId}/${contract.contract_number}.pdf`;

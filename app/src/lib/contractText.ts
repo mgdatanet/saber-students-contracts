@@ -1,4 +1,6 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import type { Database } from "@/lib/supabase/database.types";
 
 export type ContractTextBlocks = Record<string, string>;
 
@@ -14,7 +16,13 @@ export const CONTRACT_TEXT_BLOCK_KEYS = [
 
 /** Fetches all admin-editable contract text blocks, keyed by their block key. */
 export async function fetchContractTextBlocks(): Promise<ContractTextBlocks> {
-  const supabase = await createClient();
+  return fetchContractTextBlocksWith(await createClient());
+}
+
+/** Same, on a caller-supplied client — the signing flow runs without a session. */
+export async function fetchContractTextBlocksWith(
+  supabase: SupabaseClient<Database>,
+): Promise<ContractTextBlocks> {
   const { data } = await supabase.from("contract_text_blocks").select("key, content");
 
   const blocks: ContractTextBlocks = {};

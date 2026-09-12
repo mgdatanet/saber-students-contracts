@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
-import { SignaturePad, type SignaturePadHandle } from "@/components/SignaturePad";
-import { countersignContract } from "@/lib/actions/signing";
+import { useState, useTransition } from "react";
+import { ContractCanvas } from "@/components/ContractCanvas";
+import { SignaturePadModal } from "@/components/SignaturePadModal";
+import { SCHOOL_SLOT_IDS } from "@/lib/signing/slots";
+import { countersignContract, getContractForCountersign } from "@/lib/actions/signing";
 
 function formatDate(iso: string | null) {
   if (!iso) return "—";
@@ -34,7 +36,6 @@ export function CountersignCard({
   programName,
   className,
   studentSignedAt,
-  pdfUrl,
   signerName,
 }: {
   contractId: string;
@@ -44,27 +45,41 @@ export function CountersignCard({
   programName: string;
   className: string;
   studentSignedAt: string | null;
-  pdfUrl: string | null;
   signerName: string;
 }) {
-  const pad = useRef<SignaturePadHandle>(null);
   const [open, setOpen] = useState(false);
-  const [hasInk, setHasInk] = useState(false);
+  const [html, setHtml] = useState<string | null>(null);
+  const [signature, setSignature] = useState<string | null>(null);
+  const [asking, setAsking] = useState(false);
   const [consented, setConsented] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, startLoading] = useTransition();
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   const waiting = waitingFor(studentSignedAt);
-  const ready = hasInk && consented;
+  const ready = Boolean(signature) && consented;
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    // The document is the whole contract, so it is fetched only when someone
+    // actually opens the card rather than with every row of the queue.
+    if (next && !html) {
+      startLoading(async () => {
+        const result = await getContractForCountersign(contractId);
+        if (result.error) setError(result.error);
+        else setHtml(result.html ?? null);
+      });
+    }
+  }
 
   function countersign() {
-    const dataUrl = pad.current?.toDataURL();
-    if (!dataUrl) return;
+    if (!signature) return;
     setError(null);
 
     startTransition(async () => {
-      const result = await countersignContract(contractId, dataUrl);
+      const result = await countersignContract(contractId, signature);
       // An error here can still mean "signed, but the email didn't go out" —
       // the action says which, so show it and refresh either way.
       if (result.error) setError(result.error);
@@ -98,7 +113,7 @@ export function CountersignCard({
         </div>
         <button
           type="button"
-          onClick={() => setOpen((value) => !value)}
+          onClick={toggle}
           className="rounded-lg bg-brand-navy px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-blue"
         >
           {open ? "Close" : "Review & countersign"}
@@ -107,41 +122,22 @@ export function CountersignCard({
 
       {open && (
         <div className="space-y-5 border-t border-slate-200 p-5">
-          {pdfUrl ? (
-            <iframe
-              src={pdfUrl}
-              title={`Contract ${contractNumber}`}
-              className="h-[420px] w-full rounded-lg border border-slate-200 bg-slate-100"
-            />
-          ) : (
-            <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-              This contract&apos;s PDF isn&apos;t available right now — don&apos;t countersign until you can read it.
-            </p>
+          {isLoading && <p className="text-sm text-slate-500">Loading the signed agreement…</p>}
+
+          {html && (
+            <>
+              <p className="text-sm text-slate-500">
+                This is the agreement exactly as the student signed it. Click the highlighted box on the
+                &ldquo;Accepted by&rdquo; line to add your signature.
+              </p>
+              <ContractCanvas
+                html={html}
+                activeSlots={[...SCHOOL_SLOT_IDS]}
+                stamps={{ "school-signature": signature }}
+                onSlotClick={() => setAsking(true)}
+              />
+            </>
           )}
-
-          <div>
-            <h3 className="font-semibold text-brand-navy">Your signature</h3>
-            <p className="mb-3.5 text-sm text-slate-500">
-              Draw your signature below. It&apos;s added to the contract on a signature certificate page alongside
-              the student&apos;s.
-            </p>
-
-            <SignaturePad ref={pad} onInkChange={setHasInk} className="h-40" />
-
-            <div className="mt-2 flex items-center justify-between">
-              <span className="text-xs text-slate-500">
-                {signerName} &middot;{" "}
-                {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-              </span>
-              <button
-                type="button"
-                onClick={() => pad.current?.clear()}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:border-slate-400 hover:text-slate-700"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
 
           <label className="flex items-start gap-2.5 text-sm text-slate-600">
             <input
@@ -179,12 +175,24 @@ export function CountersignCard({
                 ? studentEmail
                   ? `The signed copy goes to ${studentEmail}`
                   : "Ready to countersign"
-                : !hasInk
-                  ? "Draw your signature and check the box to continue"
+                : !signature
+                  ? "Click the highlighted box in the agreement to sign"
                   : "Check the box to confirm and continue"}
             </span>
           </div>
         </div>
+      )}
+
+      {asking && (
+        <SignaturePadModal
+          kind="signature"
+          signerName={signerName}
+          onAdopt={(dataUrl) => {
+            setSignature(dataUrl);
+            setAsking(false);
+          }}
+          onCancel={() => setAsking(false)}
+        />
       )}
     </div>
   );
