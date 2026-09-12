@@ -58,6 +58,7 @@ export async function saveStudentIdentity(classId: string, studentId: string, fo
       date_of_birth: String(formData.get("date_of_birth") ?? "").trim() || null,
       phone: String(formData.get("phone") ?? "").trim() || null,
       mobile: String(formData.get("mobile") ?? "").trim() || null,
+      email: String(formData.get("email") ?? "").trim() || null,
       address: String(formData.get("address") ?? "").trim() || null,
       contract_date: String(formData.get("contract_date") ?? "").trim() || null,
     })

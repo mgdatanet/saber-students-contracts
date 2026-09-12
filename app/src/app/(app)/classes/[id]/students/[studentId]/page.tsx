@@ -7,6 +7,7 @@ import { StudentAidGrid } from "./StudentAidGrid";
 import { GenerateContractButton } from "./GenerateContractButton";
 import { DownloadContractLink } from "../../DownloadContractLink";
 import { DeleteStudentButton } from "./DeleteStudentButton";
+import { SendForSignatureCard } from "./SendForSignatureCard";
 import { AdminDeleteContractButton } from "./AdminDeleteContractButton";
 import { AdminDeleteStudentButton } from "./AdminDeleteStudentButton";
 
@@ -29,7 +30,9 @@ export default async function StudentDetailPage({
     supabase.from("class_semesters").select("*").eq("class_id", classId).order("n"),
     supabase
       .from("students")
-      .select("*, student_semester_aid(*), contracts(id, contract_number, issued_at, pdf_path)")
+      .select(
+        "*, student_semester_aid(*), contracts(id, contract_number, issued_at, pdf_path, status, sent_at, student_signed_at, sign_token_expires_at)",
+      )
       .eq("id", studentId)
       .single(),
   ]);
@@ -98,6 +101,17 @@ export default async function StudentDetailPage({
         <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{errorParam}</div>
       )}
 
+      {contract && (
+        <SendForSignatureCard
+          contractId={contract.id}
+          status={contract.status}
+          studentEmail={student.email}
+          sentAt={contract.sent_at}
+          studentSignedAt={contract.student_signed_at}
+          linkExpiresAt={contract.sign_token_expires_at}
+        />
+      )}
+
       {contract && isAdmin && (
         <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
           Admin override: this student already has an issued contract. Editing below does <strong>not</strong>{" "}
@@ -125,6 +139,13 @@ export default async function StudentDetailPage({
           />
           <Field name="phone" label="Telephone" defaultValue={student.phone ?? ""} disabled={!editable} />
           <Field name="mobile" label="Cell phone" defaultValue={student.mobile ?? ""} disabled={!editable} />
+          <Field
+            name="email"
+            label="Email (for signing)"
+            type="email"
+            defaultValue={student.email ?? ""}
+            disabled={!editable}
+          />
           <Field
             name="contract_date"
             label="Contract date"

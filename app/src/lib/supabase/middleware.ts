@@ -4,7 +4,11 @@ import { NextResponse, type NextRequest } from "next/server";
 // /reset-password must stay public: the recovery session it needs is
 // established client-side from the URL hash fragment (never sent to the
 // server), so there's no server-side session yet when this middleware runs.
-const PUBLIC_PATHS = ["/login", "/forgot-password", "/reset-password"];
+//
+// /sign is where students sign their contract. They have no account at all —
+// the signing token in the URL is the only credential — so bouncing them to
+// /login would kill the flow at the door.
+const PUBLIC_PATHS = ["/login", "/forgot-password", "/reset-password", "/sign"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
