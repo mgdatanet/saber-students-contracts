@@ -31,9 +31,16 @@ export function ContractCanvas({
 }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const wrapper = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
   const [docHeight, setDocHeight] = useState(1100);
   const [ready, setReady] = useState(false);
+  const [fitScale, setFitScale] = useState(1);
+  const [userZoom, setUserZoom] = useState(1);
+
+  // `zoom` rather than `transform: scale()`: it shrinks the element's actual
+  // layout box, so the page reserves exactly the room the document occupies.
+  // A transform leaves the full-size box behind and the wrapper has to guess a
+  // height to clip it to — which is what cut the pages off on the phone.
+  const scale = fitScale * userZoom;
 
   // The contract is laid out for US Letter at 96dpi; everything below just
   // scales that fixed page down to whatever width the screen offers.
@@ -41,10 +48,13 @@ export function ContractCanvas({
 
   const measure = useCallback(() => {
     const width = wrapper.current?.clientWidth;
-    if (width) setScale(Math.min(width / PAGE_WIDTH, 1));
+    if (width) setFitScale(Math.min(width / PAGE_WIDTH, 1));
 
-    const body = frame.current?.contentDocument?.body;
-    if (body) setDocHeight(body.scrollHeight);
+    const doc = frame.current?.contentDocument;
+    // documentElement, not body: the contract's pages are floated into place by
+    // its print stylesheet and body can settle shorter than what is painted.
+    const height = Math.max(doc?.documentElement?.scrollHeight ?? 0, doc?.body?.scrollHeight ?? 0);
+    if (height) setDocHeight(height);
   }, []);
 
   useEffect(() => {
@@ -141,6 +151,30 @@ export function ContractCanvas({
     if (ready) decorate();
   }, [ready, decorate]);
 
+  // The contract embeds its fonts, and a page that measured before they landed
+  // reflows taller afterwards — which is how the document ended up taller than
+  // the box drawn for it, with pages looking cut off and stacked over
+  // each other. Watch for every such change instead of measuring once.
+  useEffect(() => {
+    const doc = frame.current?.contentDocument;
+    if (!ready || !doc) return;
+
+    doc.fonts?.ready.then(measure).catch(() => {});
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(doc.documentElement);
+    if (doc.body) observer.observe(doc.body);
+
+    // Belt and braces for browsers that settle late (iOS Safari resizes an
+    // iframe to its content on its own schedule).
+    const timers = [250, 1000, 2500].map((delay) => setTimeout(measure, delay));
+
+    return () => {
+      observer.disconnect();
+      timers.forEach(clearTimeout);
+    };
+  }, [ready, measure]);
+
   useEffect(() => {
     if (!focusSlot || !ready) return;
     const doc = frame.current?.contentDocument;
@@ -157,9 +191,31 @@ export function ContractCanvas({
     return () => clearTimeout(timer);
   }, [focusSlot, ready, scale]);
 
+  const zoomedOut = userZoom <= 0.55;
+
   return (
-    <div ref={wrapper} className="w-full overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm">
-      <div style={{ height: docHeight * scale }}>
+    <div className="w-full">
+      <div className="mb-2 flex items-center justify-end gap-1.5">
+        <span className="mr-1 text-xs text-slate-500">Zoom</span>
+        <ZoomButton label="Zoom out" disabled={zoomedOut} onClick={() => setUserZoom((z) => Math.max(z - 0.25, 0.5))}>
+          &minus;
+        </ZoomButton>
+        <button
+          type="button"
+          onClick={() => setUserZoom(1)}
+          className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+        >
+          Fit
+        </button>
+        <ZoomButton label="Zoom in" disabled={userZoom >= 3} onClick={() => setUserZoom((z) => Math.min(z + 0.25, 3))}>
+          +
+        </ZoomButton>
+      </div>
+
+      <div
+        ref={wrapper}
+        className="w-full overflow-x-auto rounded-xl border border-slate-300 bg-white shadow-sm"
+      >
         <iframe
           ref={frame}
           title="Enrollment agreement"
@@ -169,14 +225,38 @@ export function ContractCanvas({
             setReady(true);
           }}
           style={{
+            display: "block",
             width: PAGE_WIDTH,
             height: docHeight,
             border: 0,
-            transform: `scale(${scale})`,
-            transformOrigin: "top left",
+            zoom: scale,
           }}
         />
       </div>
     </div>
+  );
+}
+
+function ZoomButton({
+  children,
+  label,
+  disabled,
+  onClick,
+}: {
+  children: React.ReactNode;
+  label: string;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="size-7 rounded-lg border border-slate-300 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+    >
+      {children}
+    </button>
   );
 }

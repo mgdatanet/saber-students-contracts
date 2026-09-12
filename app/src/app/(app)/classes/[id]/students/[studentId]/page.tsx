@@ -8,6 +8,7 @@ import { GenerateContractButton } from "./GenerateContractButton";
 import { DownloadContractLink } from "../../DownloadContractLink";
 import { DeleteStudentButton } from "./DeleteStudentButton";
 import { SendForSignatureCard } from "./SendForSignatureCard";
+import { currentContractPdfPath } from "@/lib/contractPdf";
 import { AdminDeleteContractButton } from "./AdminDeleteContractButton";
 import { AdminDeleteStudentButton } from "./AdminDeleteStudentButton";
 
@@ -31,7 +32,7 @@ export default async function StudentDetailPage({
     supabase
       .from("students")
       .select(
-        "*, student_semester_aid(*), contracts(id, contract_number, issued_at, pdf_path, status, sent_at, student_signed_at, sign_token_expires_at, countersigned_at, executed_pdf_path)",
+        "*, student_semester_aid(*), contracts(id, contract_number, issued_at, pdf_path, student_signed_pdf_path, executed_pdf_path, status, sent_at, student_signed_at, sign_token_expires_at, countersigned_at)",
       )
       .eq("id", studentId)
       .single(),
@@ -73,7 +74,7 @@ export default async function StudentDetailPage({
                 <span className="text-sm font-medium text-amber-700 bg-brand-gold/15 border border-brand-gold/30 rounded-lg px-3 py-1.5">
                   Contract {contract.contract_number} issued
                 </span>
-                <DownloadContractLink pdfPath={contract.pdf_path} />
+                <DownloadContractLink pdfPath={currentContractPdfPath(contract)} />
                 {isAdmin && <AdminDeleteContractButton contractId={contract.id} />}
               </>
             ) : (
@@ -110,7 +111,6 @@ export default async function StudentDetailPage({
           studentSignedAt={contract.student_signed_at}
           linkExpiresAt={contract.sign_token_expires_at}
           countersignedAt={contract.countersigned_at}
-          hasExecutedPdf={Boolean(contract.executed_pdf_path)}
         />
       )}
 

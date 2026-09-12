@@ -6,6 +6,7 @@ import { addStudent } from "@/lib/actions/classes";
 import { computeContract, validateStudent } from "@/lib/calc";
 import { GenerateAllButton } from "./GenerateAllButton";
 import { DownloadContractLink } from "./DownloadContractLink";
+import { currentContractPdfPath } from "@/lib/contractPdf";
 import { DeleteClassButton } from "../DeleteClassButton";
 
 export default async function ClassDetailPage({
@@ -25,7 +26,7 @@ export default async function ClassDetailPage({
     supabase.from("class_semesters").select("*").eq("class_id", id).order("n"),
     supabase
       .from("students")
-      .select("*, student_semester_aid(*), contracts(id, contract_number, pdf_path)")
+      .select("*, student_semester_aid(*), contracts(id, contract_number, pdf_path, student_signed_pdf_path, executed_pdf_path)")
       .eq("class_id", id)
       .order("last_name"),
   ]);
@@ -57,7 +58,8 @@ export default async function ClassDetailPage({
     );
     const totals = computeContract(aid, cls.tuition_per_credit);
     const hasContract = (s.contracts?.length ?? 0) > 0;
-    const pdfPath = s.contracts?.[0]?.pdf_path ?? null;
+    const contract = s.contracts?.[0];
+    const pdfPath = contract ? currentContractPdfPath(contract) : null;
 
     return { student: s, validation, totals, hasContract, pdfPath };
   });

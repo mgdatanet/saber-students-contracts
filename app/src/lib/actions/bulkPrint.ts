@@ -2,6 +2,7 @@
 
 import { PDFDocument } from "pdf-lib";
 import { createClient } from "@/lib/supabase/server";
+import { CONTRACT_PDF_COLUMNS, currentContractPdfPath } from "@/lib/contractPdf";
 
 export interface MergeContractsResult {
   pdfBase64?: string;
@@ -17,7 +18,7 @@ export async function mergeContractPdfs(studentIds: string[]): Promise<MergeCont
 
   const { data: students, error } = await supabase
     .from("students")
-    .select("id, first_name, last_name, contracts(pdf_path)")
+    .select(`id, first_name, last_name, contracts(${CONTRACT_PDF_COLUMNS})`)
     .in("id", studentIds);
 
   if (error) return { skipped: [], error: error.message };
@@ -30,7 +31,8 @@ export async function mergeContractPdfs(studentIds: string[]): Promise<MergeCont
 
   for (const id of studentIds) {
     const student = byId.get(id);
-    const pdfPath = student?.contracts?.[0]?.pdf_path;
+    const contract = student?.contracts?.[0];
+    const pdfPath = contract ? currentContractPdfPath(contract) : null;
     if (!student || !pdfPath) {
       if (student) skipped.push(`${student.first_name} ${student.last_name}`);
       continue;

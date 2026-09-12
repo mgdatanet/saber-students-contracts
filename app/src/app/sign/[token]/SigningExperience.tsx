@@ -99,7 +99,7 @@ export function SigningExperience({
     <>
       {/* Sticky guide: what's left, and a jump to the next box. */}
       <div className="sticky top-0 z-30 -mx-1 mb-4 rounded-xl border border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
               {STUDENT_SLOT_IDS.map((id) => (
@@ -110,18 +110,25 @@ export function SigningExperience({
               ))}
             </div>
             <span className="text-sm font-medium text-slate-700">
-              {allPlaced
-                ? "All set — confirm below to finish"
-                : `${placed} of ${STUDENT_SLOT_IDS.length} placed — click the highlighted boxes as you read`}
+              {allPlaced ? (
+                "All set — confirm below to finish"
+              ) : (
+                <>
+                  {placed} of {STUDENT_SLOT_IDS.length} placed
+                  {/* The instruction is the first thing to go when the phone
+                      has no room for it; the counter always stays. */}
+                  <span className="hidden sm:inline"> — click the highlighted boxes as you read</span>
+                </>
+              )}
             </span>
           </div>
           {!allPlaced && (
             <button
               type="button"
               onClick={goToNext}
-              className="rounded-lg bg-brand-navy px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-blue"
+              className="shrink-0 rounded-lg bg-brand-navy px-3.5 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-blue"
             >
-              Take me to the next box
+              Next box
             </button>
           )}
         </div>

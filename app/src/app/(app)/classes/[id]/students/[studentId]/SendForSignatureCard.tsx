@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { sendContractForSignature } from "@/lib/actions/signing";
-import { ExecutedDownloadLink } from "@/components/ExecutedDownloadLink";
 
 type Status = "issued" | "pending_signature" | "signed_by_student" | "countersigned" | "voided";
 
@@ -34,7 +33,6 @@ export function SendForSignatureCard({
   studentSignedAt,
   linkExpiresAt,
   countersignedAt,
-  hasExecutedPdf,
 }: {
   contractId: string;
   status: Status;
@@ -43,7 +41,6 @@ export function SendForSignatureCard({
   studentSignedAt: string | null;
   linkExpiresAt: string | null;
   countersignedAt: string | null;
-  hasExecutedPdf: boolean;
 }) {
   const [email, setEmail] = useState(studentEmail ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -76,10 +73,7 @@ export function SendForSignatureCard({
             {status === "voided" && "This contract was voided."}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {status === "countersigned" && hasExecutedPdf && <ExecutedDownloadLink contractId={contractId} />}
-          <span className={`rounded-lg border px-3 py-1.5 text-sm font-medium ${badge.className}`}>{badge.label}</span>
-        </div>
+        <span className={`rounded-lg border px-3 py-1.5 text-sm font-medium ${badge.className}`}>{badge.label}</span>
       </div>
 
       {canSend && (
