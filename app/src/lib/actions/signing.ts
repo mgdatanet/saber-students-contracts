@@ -205,15 +205,26 @@ export async function submitStudentSignature(
   return {};
 }
 
-/** Tells whoever can countersign that a contract is waiting for them. */
+/**
+ * Tells whoever can countersign that a contract is waiting for them.
+ *
+ * Financial Aid owns this queue, so they are the audience. Admins are the
+ * fallback only when no financial_aid user exists at all — otherwise the first
+ * signature of a school that hasn't created those accounts yet would notify
+ * nobody, and the contract would sit there silently.
+ */
 async function notifySchool(input: { studentName: string; contractNumber: string }): Promise<void> {
   const admin = createAdminClient();
 
-  const { data: profiles } = await admin
+  const { data: financialAid } = await admin
     .from("profiles")
     .select("id")
-    .in("role", ["admin", "financial_aid"])
+    .eq("role", "financial_aid")
     .eq("approved", true);
+
+  const profiles = financialAid?.length
+    ? financialAid
+    : (await admin.from("profiles").select("id").eq("role", "admin").eq("approved", true)).data;
 
   if (!profiles?.length) return;
 
