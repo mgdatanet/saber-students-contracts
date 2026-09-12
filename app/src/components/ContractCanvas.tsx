@@ -107,7 +107,11 @@ export function ContractCanvas({
 
   const measure = useCallback(() => {
     const width = wrapper.current?.clientWidth;
-    if (width) setFitScale(Math.min(width / PAGE_WIDTH, 1));
+    // Fill the space given, up or down. Capping this at 1 left the contract
+    // stranded at its own 816px beside a wider panel, with dead space to the
+    // right of it; scaling up is safe because the document is live text, not
+    // a bitmap, so it stays sharp.
+    if (width) setFitScale(Math.min(Math.max(width / PAGE_WIDTH, 0.2), 2));
   }, []);
 
   useEffect(() => {
