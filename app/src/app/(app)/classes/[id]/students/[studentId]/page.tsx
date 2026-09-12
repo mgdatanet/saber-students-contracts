@@ -31,7 +31,7 @@ export default async function StudentDetailPage({
     supabase
       .from("students")
       .select(
-        "*, student_semester_aid(*), contracts(id, contract_number, issued_at, pdf_path, status, sent_at, student_signed_at, sign_token_expires_at)",
+        "*, student_semester_aid(*), contracts(id, contract_number, issued_at, pdf_path, status, sent_at, student_signed_at, sign_token_expires_at, countersigned_at, executed_pdf_path)",
       )
       .eq("id", studentId)
       .single(),
@@ -109,6 +109,8 @@ export default async function StudentDetailPage({
           sentAt={contract.sent_at}
           studentSignedAt={contract.student_signed_at}
           linkExpiresAt={contract.sign_token_expires_at}
+          countersignedAt={contract.countersigned_at}
+          hasExecutedPdf={Boolean(contract.executed_pdf_path)}
         />
       )}
 

@@ -269,10 +269,12 @@ export type Database = {
           contract_number: string
           countersigned_at: string | null
           countersigned_by: string | null
+          executed_pdf_path: string | null
           id: string
           issued_at: string
           issued_by: string | null
           pdf_path: string | null
+          school_signature_path: string | null
           sent_at: string | null
           sign_token: string | null
           sign_token_expires_at: string | null
@@ -289,10 +291,12 @@ export type Database = {
           contract_number: string
           countersigned_at?: string | null
           countersigned_by?: string | null
+          executed_pdf_path?: string | null
           id?: string
           issued_at?: string
           issued_by?: string | null
           pdf_path?: string | null
+          school_signature_path?: string | null
           sent_at?: string | null
           sign_token?: string | null
           sign_token_expires_at?: string | null
@@ -309,10 +313,12 @@ export type Database = {
           contract_number?: string
           countersigned_at?: string | null
           countersigned_by?: string | null
+          executed_pdf_path?: string | null
           id?: string
           issued_at?: string
           issued_by?: string | null
           pdf_path?: string | null
+          school_signature_path?: string | null
           sent_at?: string | null
           sign_token?: string | null
           sign_token_expires_at?: string | null

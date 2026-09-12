@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { submitStudentSignature } from "@/lib/actions/signing";
+import { SignaturePad, type SignaturePadHandle } from "@/components/SignaturePad";
 
 export function SignatureForm({
   token,
@@ -12,9 +13,7 @@ export function SignatureForm({
   studentName: string;
   alreadySigned: boolean;
 }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const drawing = useRef(false);
-  const last = useRef<{ x: number; y: number } | null>(null);
+  const pad = useRef<SignaturePadHandle>(null);
 
   const [hasInk, setHasInk] = useState(false);
   const [consented, setConsented] = useState(false);
@@ -22,75 +21,11 @@ export function SignatureForm({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // Canvas pixels must track CSS pixels or the drawn line lands off the cursor.
-  const resize = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const ratio = window.devicePixelRatio || 1;
-    canvas.width = rect.width * ratio;
-    canvas.height = rect.height * ratio;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.scale(ratio, ratio);
-    ctx.lineWidth = 2.4;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = "#16233A";
-  }, []);
-
-  useEffect(() => {
-    if (signed) return;
-    resize();
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
-  }, [resize, signed]);
-
-  function pointFrom(e: React.PointerEvent<HTMLCanvasElement>) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  }
-
-  function startStroke(e: React.PointerEvent<HTMLCanvasElement>) {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    drawing.current = true;
-    last.current = pointFrom(e);
-  }
-
-  function drawStroke(e: React.PointerEvent<HTMLCanvasElement>) {
-    if (!drawing.current || !last.current) return;
-    const ctx = canvasRef.current?.getContext("2d");
-    if (!ctx) return;
-
-    const point = pointFrom(e);
-    ctx.beginPath();
-    ctx.moveTo(last.current.x, last.current.y);
-    ctx.lineTo(point.x, point.y);
-    ctx.stroke();
-    last.current = point;
-    if (!hasInk) setHasInk(true);
-  }
-
-  function endStroke() {
-    drawing.current = false;
-    last.current = null;
-  }
-
-  function clear() {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setHasInk(false);
-  }
-
   function submit() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const dataUrl = pad.current?.toDataURL();
+    if (!dataUrl) return;
     setError(null);
 
-    const dataUrl = canvas.toDataURL("image/png");
     startTransition(async () => {
       const result = await submitStudentSignature(token, dataUrl);
       if (result.error) setError(result.error);
@@ -124,23 +59,7 @@ export function SignatureForm({
         Draw your signature in the box below using your mouse, stylus, or finger.
       </p>
 
-      <div className="relative h-45 overflow-hidden rounded-xl border-[1.5px] border-dashed border-slate-300 bg-slate-50">
-        <canvas
-          ref={canvasRef}
-          onPointerDown={startStroke}
-          onPointerMove={drawStroke}
-          onPointerUp={endStroke}
-          onPointerLeave={endStroke}
-          aria-label="Signature drawing area"
-          className="size-full cursor-crosshair touch-none"
-        />
-        <div className="pointer-events-none absolute inset-x-4 bottom-9.5 h-px bg-slate-300" />
-        {!hasInk && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-[15px] italic text-slate-400">
-            Sign here
-          </div>
-        )}
-      </div>
+      <SignaturePad ref={pad} onInkChange={setHasInk} />
 
       <div className="mt-2 flex items-center justify-between">
         <span className="text-xs text-slate-500">
@@ -149,7 +68,7 @@ export function SignatureForm({
         </span>
         <button
           type="button"
-          onClick={clear}
+          onClick={() => pad.current?.clear()}
           className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:border-slate-400 hover:text-slate-700"
         >
           Clear

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { sendContractForSignature } from "@/lib/actions/signing";
+import { ExecutedDownloadLink } from "@/components/ExecutedDownloadLink";
 
 type Status = "issued" | "pending_signature" | "signed_by_student" | "countersigned" | "voided";
 
@@ -32,6 +33,8 @@ export function SendForSignatureCard({
   sentAt,
   studentSignedAt,
   linkExpiresAt,
+  countersignedAt,
+  hasExecutedPdf,
 }: {
   contractId: string;
   status: Status;
@@ -39,6 +42,8 @@ export function SendForSignatureCard({
   sentAt: string | null;
   studentSignedAt: string | null;
   linkExpiresAt: string | null;
+  countersignedAt: string | null;
+  hasExecutedPdf: boolean;
 }) {
   const [email, setEmail] = useState(studentEmail ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -67,11 +72,14 @@ export function SendForSignatureCard({
             {status === "pending_signature" &&
               `Sent ${formatDate(sentAt)}${linkExpiresAt ? ` · link expires ${formatDate(linkExpiresAt)}` : ""}`}
             {status === "signed_by_student" && `Student signed ${formatDate(studentSignedAt)}`}
-            {status === "countersigned" && "Signed by both parties."}
+            {status === "countersigned" && `Signed by both parties ${formatDate(countersignedAt) ?? ""}`}
             {status === "voided" && "This contract was voided."}
           </p>
         </div>
-        <span className={`rounded-lg border px-3 py-1.5 text-sm font-medium ${badge.className}`}>{badge.label}</span>
+        <div className="flex items-center gap-3">
+          {status === "countersigned" && hasExecutedPdf && <ExecutedDownloadLink contractId={contractId} />}
+          <span className={`rounded-lg border px-3 py-1.5 text-sm font-medium ${badge.className}`}>{badge.label}</span>
+        </div>
       </div>
 
       {canSend && (
