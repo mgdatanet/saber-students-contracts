@@ -54,6 +54,13 @@ function IconSignature() {
     </svg>
   );
 }
+function IconPulse() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="size-5">
+      <path d="M3 12h4l2.5-7 5 14L17.5 12H21" />
+    </svg>
+  );
+}
 function IconDocEdit() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="size-5">
@@ -86,6 +93,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/classes", label: "Classes", icon: <IconLayers />, roles: ["admin", "staff"] },
   { href: "/reports", label: "Reports", icon: <IconChart />, roles: ["admin", "staff"] },
   { href: "/pending-signatures", label: "Pending Signatures", icon: <IconCheckDoc />, roles: ["admin", "financial_aid"] },
+  { href: "/signature-report", label: "Signature Report", icon: <IconPulse />, roles: ["admin", "staff", "financial_aid"] },
   { href: "/programs", label: "Programs", icon: <IconBook />, roles: ["admin"] },
   { href: "/signers", label: "Signers", icon: <IconSignature />, roles: ["admin"] },
   { href: "/contract-editor", label: "Contract Editor", icon: <IconDocEdit />, roles: ["admin"] },
