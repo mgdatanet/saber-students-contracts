@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/actions/profile";
+import { CONTRACT_ARTIFACT_COLUMNS, contractArtifactPaths } from "@/lib/contractPdf";
 
 async function requireAdmin() {
   const { profile } = await requireProfile();
@@ -16,8 +17,27 @@ export interface AdminActionResult {
 }
 
 /**
- * Deletes one erroneous contract: removes its frozen PDF from storage, deletes
- * the audit row, and re-opens the class (unlocks its financial fields) if no
+ * Deletes a contract's files, and says so out loud when it cannot.
+ *
+ * The row is removed either way — a file that outlives its record is litter,
+ * not a reason to keep a contract the admin asked to delete — but a refusal
+ * here is how a bucket quietly fills with orphans, so it is never swallowed.
+ */
+async function removeArtifacts(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  paths: string[],
+): Promise<void> {
+  if (!paths.length) return;
+
+  const { error } = await supabase.storage.from("contracts").remove(paths);
+  if (error) {
+    console.error(`Could not delete contract files (${paths.join(", ")}): ${error.message}`);
+  }
+}
+
+/**
+ * Deletes one erroneous contract: removes every file it owns from storage,
+ * deletes the audit row, and re-opens the class (unlocks its financial fields) if no
  * other contract still references it. The student and their aid data are kept
  * so they can be corrected and a new, correct contract issued.
  */
@@ -27,15 +47,13 @@ export async function adminDeleteContract(contractId: string): Promise<AdminActi
 
   const { data: contract, error: fetchError } = await supabase
     .from("contracts")
-    .select("id, class_id, student_id, pdf_path")
+    .select(`id, student_id, ${CONTRACT_ARTIFACT_COLUMNS}`)
     .eq("id", contractId)
     .single();
 
   if (fetchError || !contract) return { success: false, error: fetchError?.message ?? "Contract not found" };
 
-  if (contract.pdf_path) {
-    await supabase.storage.from("contracts").remove([contract.pdf_path]);
-  }
+  await removeArtifacts(supabase, contractArtifactPaths(contract));
 
   const { error: deleteError } = await supabase.from("contracts").delete().eq("id", contractId);
   if (deleteError) return { success: false, error: deleteError.message };
@@ -66,12 +84,10 @@ export async function adminDeleteStudent(classId: string, studentId: string): Pr
 
   const { data: contracts } = await supabase
     .from("contracts")
-    .select("id, pdf_path")
+    .select(`id, ${CONTRACT_ARTIFACT_COLUMNS}`)
     .eq("student_id", studentId);
 
-  for (const c of contracts ?? []) {
-    if (c.pdf_path) await supabase.storage.from("contracts").remove([c.pdf_path]);
-  }
+  await removeArtifacts(supabase, (contracts ?? []).flatMap(contractArtifactPaths));
   if (contracts && contracts.length > 0) {
     await supabase
       .from("contracts")
