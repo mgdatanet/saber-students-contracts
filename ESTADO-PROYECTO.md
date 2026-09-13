@@ -90,16 +90,16 @@ no tiene carpeta de migraciones. Última: `add_countersignature_columns_to_contr
 
 ## Pendiente
 
-### Limpieza a medio terminar
-- **34 archivos huérfanos** (~3.2 MB) siguen en el bucket `contracts`, de los
-  contratos de prueba SC-2026-000011 al 000017. Supabase no deja borrarlos por
-  SQL y el MCP no expone la Storage API, así que hay que quitarlos desde el
-  dashboard de Supabase → Storage → `contracts`, en las carpetas
-  `28db791e-...` y `2f31b284-...`. No son alcanzables desde la app: ya no
-  existe ninguna fila que los referencie.
-- **Cliente de Stripe `ZZ TEST - borrar`** (`cus_VDfJLaW1zfggIB`). El MCP de
-  Stripe no expone el borrado de clientes; hay que hacerlo desde el dashboard.
-  Su única suscripción ya está cancelada, no toca nada vivo.
+### Limpieza — terminada el 13 de septiembre
+Los datos y archivos de prueba ya no existen, y el cliente `ZZ TEST - borrar`
+se borró de Stripe. Verificado: 7 estudiantes, 7 contratos, 7 archivos en el
+bucket, ningún contrato sin su PDF, y la suscripción real de SABER intacta
+(`active`, $1/mes).
+
+Lección que dejó: el bucket `contracts` no tenía política de DELETE, así que
+`remove()` llevaba fallando en silencio desde siempre y el borrado de
+contratos nunca eliminó un archivo. Arreglado en `6becebd` — si vuelven a
+aparecer huérfanos, mirar ahí primero.
 
 ### Administrativo (lo hace Miguel, no el asistente)
 - Cambiar la suscripción de $1 → $299 cuando llegue la tarjeta real de SABER.
