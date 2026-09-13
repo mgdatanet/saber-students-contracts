@@ -1,32 +1,29 @@
 # Estado del proyecto — firma electrónica de contratos
 
-Última actualización: 2026-09-12, 01:50 AM (Miami).
+Última actualización: 2026-09-13 (Miami).
 Rama de trabajo: `main` (es la que despliega Vercel) y espejo en `claude/session-0obeaq`.
-Último commit: `a26b658` — "Let Financial Aid countersign and issue the executed contract".
+Último commit: `6becebd`.
 
 ---
 
-## 🔴 LO PRIMERO AL RETOMAR
+## Estado: las 6 fases están terminadas y probadas en producción
 
-Miguel contrafirmó el contrato de prueba, **le llegó el email con el PDF adjunto**, pero dijo:
-*"tenemos algunos problemas"* — y se fue a dormir antes de describirlos.
+El flujo completo funciona de punta a punta y Miguel lo validó en computadora
+y en iPhone: enviar a firmar, el estudiante coloca iniciales y firma sobre el
+contrato real, Financial Aid contrafirma, y el estudiante recibe la copia
+ejecutada por email.
 
-**No están diagnosticados todavía. Empezar preguntándole cuáles son**, o pidiéndole
-captura de pantalla del PDF / de la cola. No asumir ni "arreglar" nada a ciegas.
+Los problemas que fueron apareciendo y ya están resueltos, por si reaparecen:
 
-Sitios donde mirar según lo que describa:
-
-| Si el problema es... | Mirar en |
-|---|---|
-| Maquetación del certificado, firma cortada o torcida | `app/src/lib/pdf/executedPdf.ts` (`buildExecutedPdf`, `drawSignatureBlock`) |
-| Hueco vacío grande en la mitad de la página | mismo archivo — los bloques quedan arriba y el pie está anclado abajo |
-| Firma que se ve pixelada o muy pequeña | escalado en `drawSignatureBlock`: `boxWidth = contentWidth * 0.6`, `boxHeight = 64` |
-| Hora equivocada en el certificado | `formatStamp()` usa `America/New_York` a propósito |
-| Texto del email, asunto, adjunto | `app/src/lib/email/templates.ts` → `fullyExecutedEmail` |
-| La cola, el orden, los badges de antigüedad | `app/src/app/(app)/pending-signatures/` |
-| Permisos / quién puede contrafirmar | `countersignContract` en `app/src/lib/actions/signing.ts` |
-
----
+| Síntoma | Causa real | Commit |
+|---|---|---|
+| Firma en hoja aparte, sin iniciales | El PDF se firmaba anexando una página en vez de rellenar el documento | `2b16110` |
+| Cajas amarillas muertas, sin clic | El `iframe` se cargaba antes de que React pusiera el listener | `d880934` |
+| Preview mostraba el contrato en blanco | Abría `pdf_path` en vez de la versión más firmada | `3ce4f1e` |
+| Páginas montadas en iPhone | Safari de iOS infla el texto en bloques más anchos que la pantalla | `8568abf` |
+| Documento angosto con franja muerta | El escalado estaba topado en 1:1 | `c06ec1f` |
+| Trazo de firma demasiado fino | Se captura grande y se reduce a un cuarto | `475592e` |
+| Archivos huérfanos en Storage | El bucket no tenía política de DELETE: `remove()` fallaba en silencio | `6becebd` |
 
 ## Dónde quedó la funcionalidad
 
@@ -93,15 +90,16 @@ no tiene carpeta de migraciones. Última: `add_countersignature_columns_to_contr
 
 ## Pendiente
 
-### Fase 6 — reportes de estado de firma (no empezada)
-Lo acordado: embudo de conversión (emitidos → enviados → firmados → contrafirmados),
-tiempo promedio hasta la firma, pendientes por antigüedad, tasa de links vencidos.
-Punto de partida: `app/src/app/(app)/reports/`.
-
-### Limpieza de la prueba
-- Estudiante `ZZ TEST Firma Electronica` — id `94ea6f06-4999-4892-bb95-96e24f2dfa8a`,
-  contrato `SC-2026-000011` (ya contrafirmado). Borrar cuando terminen las pruebas.
-- Stripe: cliente `ZZ TEST - borrar` (`cus_VDfJLaW1zfggIB`) todavía existe.
+### Limpieza a medio terminar
+- **34 archivos huérfanos** (~3.2 MB) siguen en el bucket `contracts`, de los
+  contratos de prueba SC-2026-000011 al 000017. Supabase no deja borrarlos por
+  SQL y el MCP no expone la Storage API, así que hay que quitarlos desde el
+  dashboard de Supabase → Storage → `contracts`, en las carpetas
+  `28db791e-...` y `2f31b284-...`. No son alcanzables desde la app: ya no
+  existe ninguna fila que los referencie.
+- **Cliente de Stripe `ZZ TEST - borrar`** (`cus_VDfJLaW1zfggIB`). El MCP de
+  Stripe no expone el borrado de clientes; hay que hacerlo desde el dashboard.
+  Su única suscripción ya está cancelada, no toca nada vivo.
 
 ### Administrativo (lo hace Miguel, no el asistente)
 - Cambiar la suscripción de $1 → $299 cuando llegue la tarjeta real de SABER.
@@ -109,8 +107,6 @@ Punto de partida: `app/src/app/(app)/reports/`.
 - DBA en Sunbiz (pendiente).
 - Tax ID del IRS — requiere PIN por correo postal (~14 días). **Antes del 7 de octubre.**
 - Dejar `SUBSCRIPTION_GATING_ENABLED` activo de forma permanente.
-
----
 
 ## Reglas de trabajo que Miguel fijó (respetarlas siempre)
 
