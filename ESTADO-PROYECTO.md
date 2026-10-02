@@ -94,15 +94,23 @@ no tiene carpeta de migraciones. Última: `add_countersignature_columns_to_contr
 Los datos y archivos de prueba ya no existen, y el cliente `ZZ TEST - borrar`
 se borró de Stripe. Verificado: 7 estudiantes, 7 contratos, 7 archivos en el
 bucket, ningún contrato sin su PDF, y la suscripción real de SABER intacta
-(`active`, $1/mes).
+(entonces a $1/mes; ver abajo).
 
 Lección que dejó: el bucket `contracts` no tenía política de DELETE, así que
 `remove()` llevaba fallando en silencio desde siempre y el borrado de
 contratos nunca eliminó un archivo. Arreglado en `6becebd` — si vuelven a
 aparecer huérfanos, mirar ahí primero.
 
+### Facturación — cerrada el 2 de octubre
+- Precio real: **$299.99/mes** (`price_1UMBAGDdUbLUxClrT0XYK7z4`). El de $299.00
+  quedó archivado y el de $1 "Trial Version" sigue activo para pruebas.
+- Ciclo anclado al **día 5 de cada mes**, 9:00 AM Miami. El 5 de octubre se cobran
+  $239.33 (prorrateo por los días que ya estaban pagados) y desde el 5 de
+  noviembre, $299.99.
+- La tarjeta la pone el cliente desde la app: **Users → Billing → Manage billing**.
+  Si un cobro falla, ahí mismo aparece un botón **Pay now**.
+
 ### Administrativo (lo hace Miguel, no el asistente)
-- Cambiar la suscripción de $1 → $299 cuando llegue la tarjeta real de SABER.
 - Cambiar la dirección de soporte en Stripe.
 - DBA en Sunbiz (pendiente).
 - Tax ID del IRS — requiere PIN por correo postal (~14 días). **Antes del 7 de octubre.**
