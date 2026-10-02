@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/actions/profile";
 import { listUsers, createUser } from "@/lib/actions/users";
-import { openBillingPortal } from "@/lib/actions/billing";
+import { getOpenInvoice, openBillingPortal } from "@/lib/actions/billing";
 import { createClient } from "@/lib/supabase/server";
 import { effectiveStatus } from "@/lib/billing/status";
 import { UserRoleSelect } from "./UserRoleSelect";
@@ -34,6 +34,7 @@ export default async function UsersPage({
     .eq("id", "primary")
     .single();
   const billingStatus = effectiveStatus(subscription);
+  const openInvoice = await getOpenInvoice();
 
   let users: Awaited<ReturnType<typeof listUsers>> = [];
   let loadError: string | null = null;
@@ -58,22 +59,51 @@ export default async function UsersPage({
         </p>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-semibold text-brand-navy">Billing</h2>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Subscription status: <span className="font-medium text-slate-700">{BILLING_STATUS_LABEL[billingStatus]}</span>
-          </p>
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-semibold text-brand-navy">Billing</h2>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Subscription status: <span className="font-medium text-slate-700">{BILLING_STATUS_LABEL[billingStatus]}</span>
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Change the card on file, download invoices, or manage the subscription.
+            </p>
+          </div>
+          <form action={openBillingPortal}>
+            <button
+              type="submit"
+              disabled={!subscription?.stripe_customer_id}
+              className="rounded-lg bg-brand-navy text-white text-sm font-medium px-4 py-2.5 shadow-sm hover:bg-brand-blue disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+            >
+              Manage billing
+            </button>
+          </form>
         </div>
-        <form action={openBillingPortal}>
-          <button
-            type="submit"
-            disabled={!subscription?.stripe_customer_id}
-            className="rounded-lg bg-brand-navy text-white text-sm font-medium px-4 py-2.5 shadow-sm hover:bg-brand-blue disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-          >
-            Manage billing
-          </button>
-        </form>
+
+        {/* Only ever shown when a charge has actually failed — on a healthy
+            subscription Stripe collects on its own and there is nothing to pay. */}
+        {openInvoice && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <div>
+              <p className="text-sm font-semibold text-amber-900">
+                An invoice of {openInvoice.amountDue} is waiting to be paid
+              </p>
+              <p className="text-xs text-amber-800 mt-0.5">
+                {openInvoice.number ? `Invoice ${openInvoice.number}. ` : ""}
+                Paying it restores full access right away.
+              </p>
+            </div>
+            <a
+              href={openInvoice.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg bg-amber-600 text-white text-sm font-semibold px-5 py-2.5 shadow-sm hover:bg-amber-700 transition-colors whitespace-nowrap"
+            >
+              Pay now
+            </a>
+          </div>
+        )}
       </div>
 
       {(error || loadError) && (
