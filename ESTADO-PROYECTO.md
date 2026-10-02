@@ -110,10 +110,20 @@ aparecer huérfanos, mirar ahí primero.
 - La tarjeta la pone el cliente desde la app: **Users → Billing → Manage billing**.
   Si un cobro falla, ahí mismo aparece un botón **Pay now**.
 
+### Verificación de la cuenta de Stripe — resuelta
+Miguel envió la CP575 y Stripe la aceptó. Comprobado el 2 de octubre leyendo
+la cuenta por API: `tax_id_provided: true`, `requirements.currently_due`,
+`past_due` y `pending_verification` vacíos, `current_deadline: null`,
+`disabled_reason: null`, y `charges_enabled` y `payouts_enabled` en true.
+La fecha límite del 7 de octubre ya no aplica.
+
+Para volver a comprobarlo: leer la cuenta con `GetAccountsAccount` pasando el
+propio `acct_…` como id (`GetAccount` a secas no existe en este MCP), o en el
+dashboard mirar que no haya banner y que Payments y Payouts sigan habilitados.
+
 ### Administrativo (lo hace Miguel, no el asistente)
 - Cambiar la dirección de soporte en Stripe.
 - DBA en Sunbiz (pendiente).
-- Tax ID del IRS — requiere PIN por correo postal (~14 días). **Antes del 7 de octubre.**
 - Dejar `SUBSCRIPTION_GATING_ENABLED` activo de forma permanente.
 
 ## Reglas de trabajo que Miguel fijó (respetarlas siempre)
